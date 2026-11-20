@@ -322,6 +322,7 @@ public class SportShopDbContext : DbContext
 
             entity.HasIndex(pi => new { pi.ProductId, pi.ColorId, pi.SortOrder })
                   .IsUnique()
+                  .HasFilter(null)
                   .HasDatabaseName("UQ_ProductImages_Product_Color_SortOrder");
 
             entity.HasOne(pi => pi.Product)
