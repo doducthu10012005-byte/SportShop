@@ -1,7 +1,7 @@
 # SportShop – Thiết kế Database (SQL Server)
 
-> **Phiên bản:** 1.2 – 14/11/2026 | **Tác giả:** Agent 3 (System Analyst & Database Architect)
-> **Trạng thái:** Chờ duyệt. Chưa có code. Đi cùng `api-contract.md` (v1.0) và `system-overview.md` (v1.1). Hai file này **chưa** được cập nhật theo v1.2, xem mục 13.3.
+> **Phiên bản:** 1.3 – 20/11/2026 (đồng bộ tài liệu, giữ nguyên thiết kế nghiệp vụ) | **Tác giả:** Agent 3 (System Analyst & Database Architect)
+> **Trạng thái:** Bản đồng bộ, chờ duyệt. Chưa có code. Đối chiếu `api-contract.md` v1.1 (quy tắc API ưu tiên) và `system-overview.md` v1.6. Nhật ký thay đổi lịch sử v1.2 được giữ để truy vết; các ghi chú “chưa cập nhật” cũ không còn là trạng thái hiện tại.
 
 ---
 
@@ -120,6 +120,8 @@
 | DateOfBirth | DATE | NULL | |
 | Gender | NVARCHAR(10) | NULL | CHECK `Male`/`Female`/`Other` |
 | IsActive | BIT | NN, DEFAULT 1 | Admin khóa tài khoản = 0 |
+| **MustChangePassword** | **BIT** | **NN, DEFAULT 0** | Admin đầu tiên/CLI đặt lại mật khẩu = 1; đổi mật khẩu thành công = 0; Customer = 0 |
+| **TokenVersion** | **INT** | **NN, DEFAULT 0, CHECK ≥ 0** | So sánh với claim `tv` mỗi request; tăng khi đổi mật khẩu hoặc CLI đặt lại, không tăng khi login/refresh/logout |
 | CreatedAt | DATETIME2 | NN, DEFAULT UTC now | |
 | UpdatedAt | DATETIME2 | NN | Theo mục 1.3 |
 | LastLoginAt | DATETIME2 | NULL | |
@@ -474,6 +476,8 @@ erDiagram
         int RoleId FK
         string Email UK
         string PasswordHash
+        bool MustChangePassword
+        int TokenVersion
         string FullName
         bool IsActive
         datetime UpdatedAt
@@ -661,31 +665,29 @@ Hệ quả: sản phẩm/biến thể bị ngừng bán hay xóa mềm thì đơ
 - **BANK_TRANSFER:** `Pending` kèm `ExpiresAt`. Chỉ Admin xác nhận `Paid`, và **chỉ khi `CurrentTime < ExpiresAt`** (hết hạn tuyệt đối, mục 6.7.1). Quá hạn → Background Service hủy đơn (mục 6.7.4).
 - **VNPAY/MOMO (sau này):** cổng gọi lại → dùng **cùng quy trình xác nhận** bên dưới, kể cả quy tắc hết hạn: callback đến sau `ExpiresAt` không được xác nhận.
 
-**Quy trình xác nhận thanh toán chuyển khoản (Admin), trong một transaction:**
+**Quy trình xác nhận thanh toán chuyển khoản (Admin), đã đồng bộ API v1.1:**
 
-Dữ liệu một yêu cầu xác nhận gồm: đơn, `receivedAmount`, `transactionCode`.
+Yêu cầu gồm `receivedAmount`, `transactionCode`, `paymentStatus = Paid`; chỉ áp dụng `BANK_TRANSFER`. COD chỉ chuyển `Pending → Paid` khi Admin chuyển đơn sang `DELIVERED` trong cùng transaction. Với COD, API xác nhận riêng trả `409 INVALID_STATUS_TRANSITION`.
 
-1. Mở transaction. Đọc đơn kèm `RowVersion` và khoản `Payments` "sống" hiện tại của đơn.
-2. **Phân nhánh theo trạng thái khoản, theo bảng quyết định bên dưới.** Chỉ khoản đang `Pending` mới đi tiếp. Khoản đã `Paid` được xử lý **ngay tại đây** để yêu cầu gửi lại của một xác nhận đã thành công **không bị từ chối nhầm** và **không bao giờ ghi lần hai**.
-3. Với khoản `Pending`: kiểm tra sơ bộ để báo lỗi sớm (**không phải chốt chặn**): đơn chưa `CANCELLED`; số tiền nhận = `TotalAmount`; `CurrentTime < ExpiresAt`.
-4. **Giành quyền xử lý đơn** (mục 6.7.2): cập nhật có điều kiện `Orders` (ghi `UpdatedAt`) với `RowVersion` = giá trị đã đọc và `StatusId IN (PENDING, CONFIRMED)`.
-5. **Cập nhật có điều kiện `Payments`** `Pending → Paid` với điều kiện `PaymentStatus = 'Pending'` **và `CurrentTime < ExpiresAt`** (đọc đồng hồ SQL Server ngay trong câu lệnh), ghi `ReceivedAmount`, `PaidAt = CurrentTime`, `TransactionCode`. Số tiền nhận phải bằng `Orders.TotalAmount` (đọc sau khi đã khóa đơn ở bước 4).
-6. Nếu bước 4 hoặc bước 5 cập nhật **0 dòng** → ROLLBACK (hủy mọi thay đổi của lần này) rồi **đọc lại khoản và áp dụng lại đúng bảng quyết định của bước 2**: một yêu cầu giống hệt chạy đồng thời có thể vừa làm khoản thành `Paid`, nên lúc này mới rơi vào nhánh "trả kết quả hiện tại" hoặc "xung đột"; khoản vẫn `Pending` nhưng `CurrentTime >= ExpiresAt` → từ chối vì hết hạn; khoản vẫn `Pending` còn hạn nhưng `RowVersion` bị đổi → thử lại có giới hạn số lần.
-7. COMMIT. DB còn chặn thêm: UX "1 khoản sống mỗi đơn", UX mã giao dịch, CHECK `PaidAt < ExpiresAt`.
+1. **Đọc sơ bộ, không giữ khóa:** đọc `Orders` kèm `RowVersion` và `Payments`. Chỉ được từ chối sớm trạng thái cuối; **không trả `200` dựa vào đọc sơ bộ**.
+2. Mở transaction, **giành quyền xử lý `Orders`** bằng cập nhật có điều kiện `RowVersion` và **`StatusId IN (PENDING, CONFIRMED)`** (ghi `UpdatedAt`). Nếu cập nhật 0 dòng: ROLLBACK, đọc lại, áp dụng mã lỗi theo trạng thái khoản; nếu `SHIPPING`/`DELIVERED`, trả `409 INVALID_STATUS_TRANSITION` (không trả `200` từ đọc sơ bộ); nếu chỉ thay đổi `RowVersion`, thử lại tối đa 3 lần rồi `409 CONCURRENCY_CONFLICT`.
+3. **Đọc lại `Payments` sau khi đã giành quyền `Orders`**, áp dụng bảng quyết định dưới đây. Chỉ kết quả sau bước này mới được trả `200`.
+4. Với `Pending` còn hạn, kiểm tra `receivedAmount = Orders.TotalAmount`. Sai: ROLLBACK, trả **`409 PAYMENT_AMOUNT_MISMATCH`**. Nếu đúng, cập nhật có điều kiện `Pending → Paid` với **giờ SQL Server `CurrentTime < ExpiresAt` ngay trong câu lệnh**, ghi `PaidAt`, `ReceivedAmount`, `TransactionCode`, `UpdatedAt`; vi phạm mã giao dịch duy nhất trả `409 DUPLICATE_TRANSACTION`. Cập nhật 0 dòng: ROLLBACK, đọc lại và áp dụng bảng quyết định.
+5. COMMIT chỉ khi chuyển `Pending → Paid` thành công. Trường hợp `Paid` trùng dữ liệu tại bước 3: ROLLBACK phần giành quyền, **không ghi gì**, trả `200` idempotent. Các nhánh lỗi ROLLBACK. Thứ tự khóa: `Orders → Payments → Inventories`; tối đa 3 lần thử lại theo quy tắc xung đột.
 
-**Bảng quyết định theo trạng thái khoản (dùng ở bước 2 và bước 6):**
+**Bảng quyết định (ưu tiên trạng thái khoản thanh toán theo API v1.1):**
 
-| Trạng thái khoản hiện tại | Dữ liệu yêu cầu so với bản ghi | Kết quả |
-|---------------------------|--------------------------------|---------|
-| `Pending`, `CurrentTime < ExpiresAt` | Không xét | **Đi tiếp** bước 3 đến 5 (kiểm tra thời hạn, số tiền, giành quyền, cập nhật) |
-| `Pending`, `CurrentTime >= ExpiresAt` | Không xét | **Từ chối: hết hạn** (R3, R8), kể cả khi job chưa chạy |
-| `Paid` | `transactionCode` **và** `receivedAmount` đều trùng bản ghi đã lưu | **Thành công, trả kết quả hiện tại** (idempotent). **Không ghi gì**, không đổi `PaidAt` và `UpdatedAt`, không tạo khoản mới. Áp dụng **cả khi lúc gửi lại đã quá `ExpiresAt`**, vì đây không phải một lần xác nhận mới |
-| `Paid` | Khác `transactionCode` **hoặc** khác `receivedAmount` | **Lỗi xung đột (409)**, không đổi gì |
-| `RefundPending`, `Refunded` | Bất kỳ | **Lỗi xung đột (409)**: đơn đã bị hủy, khoản đã thu đang/đã được hoàn |
-| `Expired` | Bất kỳ | **Từ chối: đã hết hạn** |
-| `Failed`, hoặc đơn `CANCELLED` không còn khoản chờ | Bất kỳ | **Từ chối**: không còn khoản đang chờ thanh toán |
+| Trạng thái/phương thức | Dữ liệu yêu cầu | HTTP / mã lỗi | Đọc sơ bộ có đủ kết luận? |
+|---|---|---|---|
+| `COD` | Bất kỳ | `409 INVALID_STATUS_TRANSITION` | Có |
+| `Pending`, chưa quá hạn | Hợp lệ | `200` nếu cập nhật thành công; tiền sai: `409 PAYMENT_AMOUNT_MISMATCH` | Không, phải giành quyền và đọc lại |
+| `Pending`, đã quá hạn; `Expired` | Bất kỳ | `409 PAYMENT_EXPIRED` | Có |
+| `Paid` | Trùng cả `transactionCode` và `receivedAmount` | `200` idempotent, không ghi gì, kể cả sau `ExpiresAt` | **Không**, chỉ sau khi giành quyền và đọc lại; nếu đơn đã `SHIPPING`/`DELIVERED` thì `409 INVALID_STATUS_TRANSITION` |
+| `Paid` | Khác một trong hai trường | `409 PAYMENT_ALREADY_CONFIRMED` | Có |
+| `RefundPending` / `Refunded` | Bất kỳ | `409 PAYMENT_ALREADY_CONFIRMED` | Có |
+| `Failed` / đơn `CANCELLED` không còn khoản chờ | Bất kỳ | `409 INVALID_STATUS_TRANSITION` | Có |
 
-Số tiền thiếu hoặc thừa đều bị từ chối, không đổi trạng thái; chênh lệch xử lý ngoài hệ thống.
+Không tạo `Pending → Failed` bằng API xác nhận: trạng thái `Failed` chỉ được tạo trong giao dịch **hủy đơn**. Tham chiếu đặc tả chính thức: `api-contract.md` v1.1, mục 7.4 và 11.
 
 ```mermaid
 stateDiagram-v2
@@ -740,7 +742,7 @@ stateDiagram-v2
 | R6 | Background Service tìm các khoản `Pending` có `ExpiresAt <= CurrentTime`, rồi hủy đơn, chuyển `Payments` sang `Expired` và hoàn kho theo quy trình mục 6.7.3 |
 | R7 | **Xác nhận thanh toán và hết hạn không thể cùng thành công.** Cả hai đều bắt đầu bằng "giành quyền xử lý đơn" (6.7.2) và cập nhật có điều kiện `Payments` với hai điều kiện thời gian **loại trừ nhau** (`CurrentTime < ExpiresAt` / `CurrentTime >= ExpiresAt`). Một đơn **không thể** vừa `Paid` vừa bị hủy do hết hạn |
 | R8 | Khoảng từ `ExpiresAt` đến lúc đơn bị hủy thực tế (tối đa bằng chu kỳ quét của job) là **"quá hạn, chờ hủy"**: DB vẫn ghi `Pending`, nhưng hệ thống coi là đã quá hạn, **từ chối xác nhận**, và hàng vẫn đang được giữ cho tới khi job chạy |
-| R9 | **Gửi lại yêu cầu xác nhận đã thành công không bị coi là xác nhận mới.** Nếu khoản đã `Paid` và `transactionCode`, `receivedAmount` trùng với bản ghi: trả kết quả thành công hiện tại, kể cả sau `ExpiresAt` (không ghi lại, `PaidAt` giữ nguyên, vẫn `< ExpiresAt`). Nếu dữ liệu khác: lỗi xung đột. Quy tắc hết hạn chỉ chặn việc xác nhận khoản đang `Pending` (bảng quyết định mục 6.5) |
+| R9 | **Gửi lại yêu cầu xác nhận đã thành công:** nếu đơn vẫn `PENDING`/`CONFIRMED`, sau khi giành quyền `Orders` và đọc lại thấy khoản `Paid` với `transactionCode`, `receivedAmount` trùng thì trả 200, kể cả sau `ExpiresAt`, không ghi lại. Nếu đơn đã `SHIPPING`/`DELIVERED`, không giành quyền được nên trả `409 INVALID_STATUS_TRANSITION` và Frontend GET chi tiết đơn. Nếu dữ liệu khác: `409 PAYMENT_ALREADY_CONFIRMED`. Thời hạn chỉ chặn `Pending → Paid` (bảng quyết định mục 6.5) |
 
 **Minh họa (hạn = 03:00):**
 
@@ -751,7 +753,7 @@ stateDiagram-v2
 | 03:02, job chưa chạy, Admin xác nhận | **Từ chối.** Đơn vẫn `Pending`/`PENDING` cho tới khi job hủy |
 | Khách chuyển khoản 02:58, Admin chỉ xem sao kê lúc 03:20 | **Từ chối** dù khách chuyển trong hạn. Admin hoàn tiền thủ công (R5) |
 | Admin xác nhận và job chạy cùng lúc quanh 03:00 | Ai giành được quyền xử lý đơn trước thì thắng. Nếu xác nhận chạy khi `CurrentTime < ExpiresAt` và commit trước → `Paid`, job thấy khoản không còn `Pending` nên bỏ qua. Nếu job hủy trước → xác nhận bị từ chối. **Không bao giờ cả hai** |
-| Admin gửi lại yêu cầu xác nhận đã thành công lúc 02:59:59, gửi lại lúc 03:05 | Dữ liệu trùng: **thành công, trả kết quả hiện tại** (khoản đã `Paid`, không ghi lại). Dữ liệu khác: lỗi xung đột 409 |
+| Admin gửi lại yêu cầu xác nhận đã thành công lúc 02:59:59, gửi lại lúc 03:05 | Nếu đơn còn `PENDING`/`CONFIRMED` và dữ liệu trùng: **200, trả kết quả hiện tại** sau khi khóa và đọc lại; nếu đã `SHIPPING`/`DELIVERED`: `409 INVALID_STATUS_TRANSITION` (GET chi tiết để xem `Paid`); dữ liệu khác: `409 PAYMENT_ALREADY_CONFIRMED` |
 
 #### 6.7.2. Giành quyền xử lý đơn bằng `Orders.RowVersion` (cơ chế)
 
@@ -763,7 +765,7 @@ stateDiagram-v2
 4. Mọi bước sau (`Payments`, `Inventories`, `InventoryTransactions`, `OrderStatusHistories`) **chỉ chạy khi đã giành được quyền**. 0 dòng → ROLLBACK, **không làm tiếp**.
 5. **Chỉ đọc `RowVersion` rồi bỏ đó là không đủ.** Giữa lúc đọc và ghi, giao dịch khác vẫn có thể đổi đơn (mức cô lập mặc định READ COMMITTED không giữ các dòng đã đọc). Chốt chặn nằm ở câu `UPDATE` có điều kiện, không phải ở lần đọc.
 6. Mọi UPDATE trên đơn ghi `UpdatedAt`. Thao tác "chỉ giành quyền" (xác nhận thanh toán) dùng chính việc ghi `UpdatedAt`; `ROWVERSION` tự đổi trên mọi cập nhật nên không cần cột phụ.
-7. **Thứ tự khóa thống nhất ở mọi nơi:** `Orders` → `Payments` → `Inventories` (theo `VariantId` tăng dần) → ghi `InventoryTransactions`, `OrderStatusHistories`. Nếu vẫn xảy ra deadlock, transaction bị chọn làm nạn nhân được thử lại.
+7. **Thứ tự khóa thống nhất ở mọi nơi với các dòng đã tồn tại:** `Orders` → `Payments` → `Inventories` (theo `VariantId` tăng dần) → ghi `InventoryTransactions`, `OrderStatusHistories`. Các dòng mới được INSERT ở bước checkout không thuộc thứ tự khóa trên. Nếu vẫn xảy ra deadlock, transaction bị chọn làm nạn nhân được thử lại.
 
 | Thao tác | Điều kiện giành quyền trên `Orders` | Thay đổi kèm theo (cùng transaction) |
 |----------|-------------------------------------|--------------------------------------|
@@ -771,7 +773,7 @@ stateDiagram-v2
 | Admin chuyển `SHIPPING` | `CONFIRMED` → `SHIPPING` | Đọc `Payments`: `BANK_TRANSFER` phải đã `Paid` (an toàn vì đơn đang bị khóa) |
 | Chuyển `DELIVERED` | `SHIPPING` → `DELIVERED`, ghi `DeliveredAt` | COD: `Payments` `Pending → Paid` có điều kiện |
 | Hủy đơn (khách, Admin, job) | `StatusId IN (PENDING, CONFIRMED)` → `CANCELLED` | Cập nhật `Payments` có điều kiện, hoàn kho (6.7.3) |
-| Xác nhận thanh toán | `StatusId IN (PENDING, CONFIRMED)`, chỉ ghi `UpdatedAt` | `Payments` `Pending → Paid` có điều kiện thời hạn (6.5) |
+| Xác nhận thanh toán chuyển khoản | `StatusId IN (PENDING, CONFIRMED)`, chỉ ghi `UpdatedAt`; **phải đọc lại `Payments` sau khi giành quyền** | `Payments` `Pending → Paid` có điều kiện thời hạn (6.5); lỗi và idempotency theo API v1.1 |
 | Xác nhận đã hoàn tiền | Không cần (đơn đã `CANCELLED`, trạng thái cuối) | `Payments` `RefundPending → Refunded` có điều kiện trạng thái (6.7.5) |
 | Điều chỉnh kho (Admin) | Không đụng `Orders` | Cập nhật có điều kiện `Inventories` theo `RowVersion` của chính nó |
 
@@ -952,11 +954,11 @@ Quy tắc đi kèm:
 
 ### 7.3. Người dùng, đơn hàng, thanh toán, sổ kho
 
-**Users** *(PasswordHash là chuỗi băm, ở đây chỉ minh họa)*
-| UserId | RoleId | Email | FullName | PasswordHash | IsActive |
-|-------:|-------:|-------|----------|--------------|:--------:|
-| 1 | 1 | admin@sportshop.vn | Quản trị viên | `<hash>` | 1 |
-| 2 | 2 | an.nguyen@example.com | Nguyễn Văn An | `<hash>` | 1 |
+**Users** *(PasswordHash là chuỗi băm, đây chỉ là dữ liệu minh họa; **không** seed tài khoản Admin)*
+| UserId | RoleId | Email | FullName | PasswordHash | IsActive | MustChangePassword | TokenVersion |
+|-------:|-------:|-------|----------|--------------|:--------:|:------------------:|-------------:|
+| 1 | 1 | admin@sportshop.vn | Quản trị viên | `<hash>` | 1 | 1 | 0 |
+| 2 | 2 | an.nguyen@example.com | Nguyễn Văn An | `<hash>` | 1 | 0 | 0 |
 
 **Orders** *(4 đơn minh họa 4 kịch bản: đã giao; hết hạn chuyển khoản; đã thu tiền rồi bị hủy, chờ hoàn tiền; đang chờ chuyển khoản)*
 | OrderId | OrderCode | UserId | StatusId | Subtotal | ShippingFee | TotalAmount | CreatedAt | DeliveredAt | CancelReason |
@@ -1067,15 +1069,17 @@ Quy tắc đi kèm:
 | BR-18 | Khi tồn kho ≤ `LowStockThreshold`, màn hình quản lý tồn kho đánh dấu "sắp hết". |
 | BR-19 **[mới]** | **Mỗi dòng đơn hàng chỉ được hoàn kho tối đa một lần.** DB bảo đảm bằng unique filtered index (`OrderItemId`, `TransactionType`) trên `InventoryTransactions`; Service bảo đảm bằng quy trình "khóa đơn → đổi trạng thái → hoàn kho" trong một transaction. Vi phạm → ROLLBACK toàn bộ. |
 | BR-20 **[sửa v1.2]** | **Hết hạn tuyệt đối (Strict Expiration)** cho `BANK_TRANSFER`: `ExpiresAt` = lúc tạo + thời hạn cấu hình (mặc định 24 giờ, theo đồng hồ SQL Server). Khi **`CurrentTime >= ExpiresAt`** khoản thanh toán là hết hạn: **Admin không được xác nhận thanh toán**, kể cả khi Background Service chưa chạy; Backend kiểm tra ngay tại thời điểm xác nhận (R3, R4). Job nền hủy đơn (`PENDING`/`CONFIRMED`), `Payments` → `Expired`, hoàn kho (BR-19). Tiền đến muộn **không bao giờ** được tự xác nhận mà xử lý thủ công (hoàn tiền). Đổi cấu hình không ảnh hưởng đơn đã tạo. Chi tiết mục 6.7.1. |
-| BR-21 **[sửa v1.2]** | **Một đơn chỉ có một khoản thanh toán thành công trong toàn bộ lịch sử**, kể cả khi sau đó đã hoàn tiền: tối đa 1 khoản "sống" (không phải `Failed`/`Expired`, tức `Pending`, `Paid`, `RefundPending`, `Refunded`). Số tiền nhận phải **đúng bằng** `Orders.TotalAmount` (= `Payments.Amount`), thiếu hoặc thừa đều bị từ chối. Mỗi `TransactionCode` chỉ dùng 1 lần. **Idempotency:** yêu cầu xác nhận gửi lại cho khoản đã `Paid` với `transactionCode` và `receivedAmount` trùng → trả kết quả thành công hiện tại; khác → lỗi xung đột (bảng quyết định mục 6.5). Không xác nhận thanh toán cho đơn `CANCELLED` hoặc khoản đã quá hạn. Đơn `DELIVERED` phải có khoản `Paid`. |
+| BR-21 **[sửa v1.2]** | **Một đơn chỉ có một khoản thanh toán thành công trong toàn bộ lịch sử**, kể cả khi sau đó đã hoàn tiền: tối đa 1 khoản "sống" (không phải `Failed`/`Expired`, tức `Pending`, `Paid`, `RefundPending`, `Refunded`). Số tiền nhận phải **đúng bằng** `Orders.TotalAmount` (= `Payments.Amount`), thiếu hoặc thừa đều bị từ chối. Mỗi `TransactionCode` chỉ dùng 1 lần. **Idempotency:** chỉ trả `200` khi giành quyền `Orders` ở `PENDING`/`CONFIRMED` và đọc lại khoản `Paid` thấy `transactionCode` và `receivedAmount` trùng; đơn đã `SHIPPING`/`DELIVERED` trả `409 INVALID_STATUS_TRANSITION` và Frontend đọc GET chi tiết; dữ liệu khác → `409 PAYMENT_ALREADY_CONFIRMED` (bảng quyết định mục 6.5). Không xác nhận thanh toán cho đơn `CANCELLED` hoặc khoản đã quá hạn. Đơn `DELIVERED` phải có khoản `Paid`. |
 | BR-22 **[mới]** | **Biến thể "bán được"** = `Products.IsActive = 1` **và** `ProductVariants.IsActive = 1` (size/màu của biến thể đang bán luôn `IsActive = 1` theo BR-23). Chỉ biến thể bán được mới được thêm vào giỏ và đưa vào đơn mới. Checkout kiểm tra lại điều kiện này. |
 | BR-23 **[mới]** | **Xóa mềm `Sizes`/`Colors`/`ProductVariants`** theo bảng ở mục 6.8: biến thể không bao giờ bị xóa cứng bằng ứng dụng; size/màu chỉ xóa cứng khi chưa có biến thể nào dùng; chỉ tắt size/màu khi không còn biến thể đang bán dùng nó; kích hoạt lại biến thể phải có size, màu đang bật. |
 | BR-24 **[mới]** | **Ảnh đại diện theo sản phẩm:** mỗi sản phẩm tối đa 1 ảnh `IsPrimary = 1`. Ảnh theo màu chỉ để hiển thị khi chọn màu (mục 6.9). |
-| BR-25 **[mới v1.2]** | **Giành quyền xử lý đơn bằng cập nhật có điều kiện theo `Orders.RowVersion`.** Mọi xác nhận thanh toán, đổi trạng thái, hủy, hoàn kho đều bắt đầu bằng một `UPDATE` có điều kiện (đúng `RowVersion` và trạng thái cho phép) trong cùng transaction; 0 dòng → ROLLBACK, không làm bước tiếp. Không chỉ đọc `RowVersion`. Thứ tự khóa `Orders` → `Payments` → `Inventories` (mục 6.7.2). |
+| BR-25 **[mới v1.2]** | **Giành quyền xử lý đơn bằng cập nhật có điều kiện theo `Orders.RowVersion`.** Mọi xác nhận thanh toán, đổi trạng thái, hủy, hoàn kho đều bắt đầu phần **ghi** bằng một `UPDATE` có điều kiện (đúng `RowVersion` và trạng thái cho phép) trong cùng transaction; 0 dòng → ROLLBACK, không làm bước tiếp. Không chỉ đọc `RowVersion`. Thứ tự khóa `Orders` → `Payments` → `Inventories` (mục 6.7.2). |
 | BR-26 **[mới v1.2]** | **Một đơn không thể vừa được thanh toán vừa bị hủy do hết hạn.** Xác nhận và hết hạn loại trừ nhau nhờ giành quyền xử lý đơn và hai điều kiện thời gian đối nghịch (R7). Đơn hủy do hết hạn chỉ có khoản `Expired`; đơn đã thu tiền bị hủy thì khoản `Paid` → `RefundPending`. |
 | BR-27 **[mới v1.2]** | **Hoàn tiền:** `Refunded` chỉ được ghi **sau khi hoàn tiền thực tế hoàn tất**, kèm `RefundedAt`. Trước đó khoản ở `RefundPending`. Hoàn đủ `ReceivedAmount` (mục 6.7.5). |
 | BR-28 **[mới v1.2]** | **Ảnh đã được `OrderItems` tham chiếu không bị ghi đè hoặc xóa.** Thay ảnh dùng tên file mới; chỉ xóa file cũ khi chắc chắn không còn `ProductImages`/`OrderItems.ImageUrl` nào tham chiếu và đã qua thời gian an toàn (mục 6.9.1). |
 | BR-29 **[mới v1.2]** | **Sổ kho khớp tồn kho:** với mỗi biến thể, `QuantityAfter` của giao dịch mới nhất luôn bằng `Inventories.QuantityOnHand`, và mỗi `QuantityAfter` bằng số dư trước cộng `QuantityChange`. |
+| BR-30 **[đồng bộ v1.3]** | **Bảo vệ access token:** `Users.TokenVersion` khởi tạo 0; claim JWT `tv` và `iat`; trên mỗi request xác thực đọc `TokenVersion` và `MustChangePassword` từ DB (không cache). Sai `tv` trả `401 TOKEN_REVOKED`. Đổi mật khẩu và CLI đặt lại mật khẩu cùng transaction: thay hash, tăng `TokenVersion`, thu hồi refresh token; không tăng `TokenVersion` khi login/refresh/logout. |
+| BR-31 **[đồng bộ v1.3]** | **Đổi mật khẩu lần đầu:** Admin khởi tạo và Admin vừa đặt lại bằng CLI có `MustChangePassword = 1`; chỉ cho phép `GET /api/v1/users/me`, `PUT /api/v1/users/me/password`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/refresh`; các API khác trả `403 PASSWORD_CHANGE_REQUIRED`. Khi đổi thành công, cờ về 0, tăng `TokenVersion` và đăng nhập lại. Customer có cờ 0. Giai đoạn 1 không có API tạo Admin/khôi phục mật khẩu Admin; không tạo `AuditLogs`. |
 
 ### 8.2. Ràng buộc UNIQUE
 
@@ -1300,9 +1304,9 @@ Quy tắc:
 | 8 | Ai được xác nhận hoàn tiền | Giả định là Admin; chưa có API tương ứng (mục 13.3) |
 | 9 | Gửi lại xác nhận khi khoản đã `RefundPending`/`Refunded` | Mình để trả lỗi xung đột (đơn đã hủy) thay vì "thành công", vì khoản không còn ở trạng thái đã thanh toán. Chỉ khoản `Paid` mới trả kết quả idempotent |
 
-### 13.3. Điểm tài liệu khác đang **lệch** so với v1.2 (chưa sửa, theo yêu cầu)
+### 13.3. Lịch sử các điểm lệch tại thời điểm v1.2 (**đã xử lý trong bản đồng bộ v1.3**)
 
-**`api-contract.md` (v1.0)**
+**`api-contract.md` (v1.0, lịch sử):** các yêu cầu nêu dưới đây đã được xử lý trong API v1.1; phần này chỉ giữ để truy vết.
 
 | # | Nội dung cần cập nhật |
 |---|----------------------|
@@ -1312,7 +1316,7 @@ Quy tắc:
 | 4 | Upload/xóa ảnh: file mới tên mới, xóa ảnh không xóa file ngay. Xác nhận thanh toán gửi lại: thành công idempotent khi trùng `transactionCode`/`receivedAmount`, `409` khi khác (đề xuất mã `PAYMENT_ALREADY_CONFIRMED`) |
 | 5 | Các điểm đã nêu ở lượt trước: `expiresAt` trong response, doanh thu tách 3 chỉ số, `CONCURRENCY_CONFLICT`, cookie refresh token |
 
-**`system-overview.md` (v1.1)**
+**`system-overview.md` (v1.1, lịch sử):** bản đồng bộ hiện tại là v1.6, các vấn đề bên dưới là ghi nhận cũ.
 
 | # | Nội dung cần cập nhật |
 |---|----------------------|
@@ -1332,3 +1336,11 @@ Quy tắc:
 | `ProductVariants` | Thêm `UpdatedAt` |
 | `CartItems` | `AddedAt` → `CreatedAt`; thêm `UpdatedAt`; CHECK `Quantity` ≤ 99 |
 | Các bảng khác | Thêm `CreatedAt`/`UpdatedAt` còn thiếu; `Users`, `Products` có `UpdatedAt` NN; thêm UQ thứ tự ảnh |
+
+
+### 13.5. Biên bản đồng bộ 20/11/2026 (v1.3)
+
+- Bổ sung `Users.MustChangePassword BIT NOT NULL DEFAULT 0`, `Users.TokenVersion INT NOT NULL DEFAULT 0`, ERD, dữ liệu mẫu và BR-30/BR-31. Không thêm bảng hoặc index; chỉ Admin đầu tiên được khởi tạo ngoài seed.
+- Quy trình xác nhận BANK_TRANSFER và bảng quyết định ở 6.5 theo API Contract v1.1: `Orders` chỉ giành quyền khi `PENDING/CONFIRMED`, đọc lại `Payments` mới trả 200, mã tiền sai là `409 PAYMENT_AMOUNT_MISMATCH`, COD bị từ chối.
+- Giữ các quyết định đã chốt: Strict Expiration, hoàn tiền `RefundPending → Refunded`, soft delete, không tạo Admin thứ hai, không thêm `AuditLogs`.
+- Các điểm “còn cần xác nhận” ở mục 13.2 được giữ như **lịch sử**; nếu mâu thuẫn thì thực thi theo mặc định ở `api-contract.md` v1.1. Không được lấy ghi chú lịch sử để ghi đè API.

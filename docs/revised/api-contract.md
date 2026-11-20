@@ -1,7 +1,7 @@
 # SportShop – API Contract (ASP.NET Core Web API)
 
 > **Phiên bản:** 1.1 – 17/11/2026 | **Tác giả:** Agent 3
-> **Trạng thái:** Chờ duyệt. Chưa có code. Tên bảng/cột tham chiếu `database-design.md` (v1.2). Đồng bộ với `system-overview.md` (v1.5). Hai cột `Users.MustChangePassword` và `Users.TokenVersion` đã được `system-overview.md` v1.5 chốt nhưng **chưa có** trong `database-design.md` v1.2 (xem mục 12). Điểm chưa đủ căn cứ để kết luận được ghi `[NEEDS DECISION]` (mục 11). Thay đổi so với v1.0: mục 10.
+> **Trạng thái:** Bản v1.1 giữ nguyên quyết định API, đã đồng bộ tham chiếu với `database-design.md` v1.3 và `system-overview.md` v1.6; chờ duyệt, chưa có code. `Users.MustChangePassword` và `Users.TokenVersion` đã bổ sung trong DB v1.3. Mục 11 giữ lại lý do chọn mặc định để truy vết, **không phải yêu cầu mở lại quyết định**.
 
 ---
 
@@ -1259,7 +1259,7 @@ Trạng thái đơn trong API dùng `StatusCode` (`PENDING`…), khớp `OrderSt
 
 ---
 
-## 11. Điểm cần quyết định `[NEEDS DECISION]`
+## 11. Các điểm từng cần quyết định `[NEEDS DECISION]` (đã giữ nguyên mặc định v1.1)
 
 | # | Nội dung | Căn cứ mâu thuẫn / thiếu | Cách đang áp dụng trong v1.1 |
 |---|----------|--------------------------|------------------------------|
@@ -1277,9 +1277,9 @@ Trạng thái đơn trong API dùng `StatusCode` (`PENDING`…), khớp `OrderSt
 
 ---
 
-## 12. Cần cập nhật ngược vào tài liệu khác
+## 12. Danh sách cập nhật ngược (đã hoàn tất trong bản đồng bộ 20/11/2026)
 
-**`database-design.md` (v1.2)**
+**`database-design.md` (v1.2 → bản đồng bộ v1.3)**
 
 | # | Nội dung |
 |---|----------|
@@ -1287,7 +1287,7 @@ Trạng thái đơn trong API dùng `StatusCode` (`PENDING`…), khớp `OrderSt
 | 2 | Mục 6.5 và 6.7.2: bỏ trả `Paid` idempotent từ lần đọc sơ bộ (đọc lại sau khi giành quyền `Orders`), nêu rõ đọc sơ bộ không giữ khóa. **Điều kiện giành quyền: giữ `IN (PENDING, CONFIRMED)`** (xem điểm 1 mục 11) |
 | 3 | Mục 13.3: đánh dấu các điểm lệch của `api-contract.md` đã xử lý ở v1.1 |
 
-**`system-overview.md` (v1.5)**
+**`system-overview.md` (v1.5 → bản đồng bộ v1.6)**
 
 | # | Nội dung |
 |---|----------|
@@ -1303,7 +1303,7 @@ Trạng thái đơn trong API dùng `StatusCode` (`PENDING`…), khớp `OrderSt
 | Thay đổi trong v1.1 | `system-overview.md` v1.5 | `database-design.md` v1.2 |
 |---------------------|---------------------------|---------------------------|
 | Cookie refresh token, CORS, CSRF | 2.2–2.5 | `RefreshTokens` (3.1) |
-| `tv`, `TOKEN_REVOKED`, `MustChangePassword`, 4 API được phép | 2.7, 6.5, 6.6 | **Chưa có** hai cột (mục 12) |
+| `tv`, `TOKEN_REVOKED`, `MustChangePassword`, 4 API được phép | 2.7, 6.5, 6.6 | **Đã bổ sung** hai cột trong DB v1.3 |
 | Xác nhận thanh toán, bảng quyết định, idempotency | 3.2, 4.3.2, 4.3.4 | 6.5, 6.7.1, 6.7.2, BR-20, BR-21, BR-25, BR-26 |
 | Xác nhận hoàn tiền | 3.2, 4.3.3 | 3.6, 6.7.5, BR-27 |
 | Hủy đơn, `RefundPending` | 3.5 | 6.7.3, BR-11, BR-19 |
@@ -1313,3 +1313,10 @@ Trạng thái đơn trong API dùng `StatusCode` (`PENDING`…), khớp `OrderSt
 | Doanh thu | — | 9, BR-15 |
 
 Kiểm tra nhất quán (đã chạy trên file này): mọi khối JSON hợp lệ; mọi hàng bảng đủ số cột; không còn endpoint thiếu tiền tố `/api/v1`; 65 endpoint ở mục 9 khớp số liệu theo nhóm; mọi `errorCode` dùng trong tài liệu có trong mục 3.2; trạng thái thanh toán thống nhất 6 giá trị; điều kiện giành quyền xác nhận thanh toán thống nhất `IN (PENDING, CONFIRMED)`.
+
+
+## 14. Biên bản đồng bộ 20/11/2026 (không thay đổi API v1.1)
+
+- Giữ nguyên 65 endpoint, request/response, quyết định mặc định ở mục 11, quy tắc xác nhận chuyển khoản `IN (PENDING, CONFIRMED)` và `409 PAYMENT_AMOUNT_MISMATCH`.
+- Đã cập nhật Database Design lên v1.3 và System Overview lên v1.6 cho các phần còn thiếu hoặc mâu thuẫn. Mục 12 là checklist lịch sử đã thực hiện; không phát sinh endpoint mới.
+- Ba tài liệu vẫn ở trạng thái **chờ nhóm duyệt**, chưa triển khai Backend/Frontend.
