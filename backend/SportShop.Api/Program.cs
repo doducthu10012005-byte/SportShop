@@ -1,7 +1,5 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using SportShop.Api.Middleware;
 using SportShop.Api.Configuration;
 using SportShop.Api.Data;
 
@@ -13,11 +11,8 @@ builder.Services.AddDbContext<SportShopDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-// 2. Cấu hình Options Pattern
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.AddAccessTokenSecurity(builder.Configuration);
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
-
-var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 
 // 3. Cấu hình CORS (Tuân thủ System Overview: Danh sách tường minh, hỗ trợ credentials, không dùng AllowAnyOrigin)
 builder.Services.AddCors(options =>
@@ -27,6 +22,12 @@ builder.Services.AddCors(options =>
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         if (allowedOrigins.Length > 0)
         {
+            if (allowedOrigins.Any(origin => !Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
+                uri.Scheme != Uri.UriSchemeHttps || uri.UserInfo.Length > 0 ||
+                origin.Contains('*') || !string.Equals(origin, uri.GetLeftPart(UriPartial.Authority),
+                    StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Cors:AllowedOrigins requires explicit HTTPS origins.");
+
             policy.WithOrigins(allowedOrigins)
                   .AllowCredentials()
                   .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
@@ -36,41 +37,12 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 4. Cấu hình Xác thực JWT Bearer
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-    options.SaveToken = true;
-
-    var signingKeyBytes = !string.IsNullOrWhiteSpace(jwtOptions.SecretKey)
-        ? Encoding.UTF8.GetBytes(jwtOptions.SecretKey)
-        : new byte[32];
-
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(signingKeyBytes),
-        ValidateIssuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer),
-        ValidIssuer = jwtOptions.Issuer,
-        ValidateAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience),
-        ValidAudience = jwtOptions.Audience,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-});
-
-builder.Services.AddAuthorization();
-
 // 5. Controller & OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+app.UseMiddleware<ExceptionMiddleware>();
 
 // 6. Cấu hình HTTP Request Pipeline
 if (app.Environment.IsDevelopment())
@@ -96,8 +68,11 @@ app.UseCors("CorsPolicy");
 
 // 9. Pipeline Xác thực & Phân quyền
 app.UseAuthentication();
+app.UseMiddleware<AccountSecurityMiddleware>();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireAuthorization();
 
 app.Run();
+
+public partial class Program { }
