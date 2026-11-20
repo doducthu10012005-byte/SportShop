@@ -1,17 +1,25 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SportShop.Api.Configuration;
+using SportShop.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cấu hình Options Pattern
+// 1. Cấu hình Database Context (SQL Server)
+builder.Services.AddDbContext<SportShopDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+// 2. Cấu hình Options Pattern
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 
-// 2. Cấu hình CORS (Tuân thủ System Overview: Danh sách tường minh, hỗ trợ credentials, không dùng AllowAnyOrigin)
+// 3. Cấu hình CORS (Tuân thủ System Overview: Danh sách tường minh, hỗ trợ credentials, không dùng AllowAnyOrigin)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
@@ -28,7 +36,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 3. Cấu hình Xác thực JWT Bearer
+// 4. Cấu hình Xác thực JWT Bearer
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -58,13 +66,13 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// 4. Controller & OpenAPI
+// 5. Controller & OpenAPI
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 5. Cấu hình HTTP Request Pipeline
+// 6. Cấu hình HTTP Request Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -77,16 +85,16 @@ else
 
 app.UseHttpsRedirection();
 
-// 6. Phục vụ Static Files (Hỗ trợ Phương án A: Cùng Origin phục vụ Frontend & Ảnh wwwroot/uploads)
+// 7. Phục vụ Static Files (Hỗ trợ Phương án A: Cùng Origin phục vụ Frontend & Ảnh wwwroot/uploads)
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
 
-// 7. Kích hoạt CORS Policy đã cấu hình tường minh
+// 8. Kích hoạt CORS Policy đã cấu hình tường minh
 app.UseCors("CorsPolicy");
 
-// 8. Pipeline Xác thực & Phân quyền
+// 9. Pipeline Xác thực & Phân quyền
 app.UseAuthentication();
 app.UseAuthorization();
 
