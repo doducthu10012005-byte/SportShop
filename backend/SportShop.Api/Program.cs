@@ -29,6 +29,7 @@ builder.Services.AddScoped<CatalogLookups>();
 builder.Services.AddScoped<CustomerCart>();
 builder.Services.AddScoped<Checkout>();
 builder.Services.AddScoped<OrderReader>();
+builder.Services.AddScoped<OrderTransitions>();
 builder.Services.AddRateLimiter(options => options.AddPolicy("image-upload", context =>
     RateLimitPartition.GetFixedWindowLimiter(context.User.FindFirst("sub")?.Value ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) })));

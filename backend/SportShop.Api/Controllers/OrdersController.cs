@@ -7,7 +7,7 @@ namespace SportShop.Api.Controllers;
 
 [ApiController, Authorize(Policy = "Customer"), Route("api/v1/orders")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class OrdersController(Checkout checkout, OrderReader reader) : ControllerBase
+public sealed class OrdersController(Checkout checkout, OrderReader reader, OrderTransitions transitions) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirst("sub")!.Value, CultureInfo.InvariantCulture);
 
@@ -22,4 +22,8 @@ public sealed class OrdersController(Checkout checkout, OrderReader reader) : Co
     [HttpGet("{orderId:int}")]
     public async Task<IActionResult> Detail(int orderId, CancellationToken ct) =>
         Ok(new { success = true, message = "OK", data = await reader.Detail(UserId, orderId, ct) });
+
+    [HttpPost("{orderId:int}/cancel")]
+    public async Task<IActionResult> Cancel(int orderId, CancelOrderRequest input, CancellationToken ct) =>
+        Ok(await transitions.CustomerCancel(UserId, orderId, input, ct));
 }

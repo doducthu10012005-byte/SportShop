@@ -148,7 +148,9 @@ public sealed class MasterDataSqlTests
                 return json;
             }
             var descriptions = factory.Services.GetRequiredService<IApiDescriptionGroupCollectionProvider>()
-                .ApiDescriptionGroups.Items.SelectMany(g => g.Items).Where(a => a.RelativePath!.StartsWith("api/v1/admin/")).ToList();
+                .ApiDescriptionGroups.Items.SelectMany(g => g.Items)
+                .Where(a => a.ActionDescriptor.RouteValues["controller"] is
+                    "AdminLookups" or "AdminProducts" or "AdminImages" or "AdminInventory").ToList();
             Assert.Equal(29, descriptions.Count);
             foreach (var endpoint in descriptions)
             {

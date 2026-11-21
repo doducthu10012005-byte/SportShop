@@ -18,7 +18,7 @@ using Xunit;
 
 namespace SportShop.Api.Tests;
 
-public sealed class CustomerOrderTests
+public sealed partial class CustomerOrderTests
 {
     private sealed record Actor(int CartId, string Token);
     private sealed record Reply(int Status, JsonElement Body)
@@ -40,6 +40,8 @@ public sealed class CustomerOrderTests
         private TaskCompletionSource arrived = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool FailCartDelete { get; set; }
+        public bool FailPaymentUpdate { get; set; }
+        public int ConflictsToSimulate { get; set; }
 
         public void Arm(string sql, int count)
         {
@@ -51,24 +53,37 @@ public sealed class CustomerOrderTests
 
         public Task Wait() => arrived.Task.WaitAsync(TimeSpan.FromSeconds(20));
         public void Release() => release.TrySetResult();
-        public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command,
+        public override async ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command,
             CommandEventData data, InterceptionResult<int> result, CancellationToken ct = default)
         {
             if (FailCartDelete && command.CommandText.Contains("DELETE", StringComparison.Ordinal) &&
                 command.CommandText.Contains("[CartItems]", StringComparison.Ordinal))
                 throw new InvalidOperationException("Test failure at cart deletion.");
-            return ValueTask.FromResult(result);
+            if (FailPaymentUpdate && command.CommandText.Contains("UPDATE dbo.Payments", StringComparison.Ordinal))
+                throw new InvalidOperationException("Test failure during payment update.");
+            if (ConflictsToSimulate > 0 && command.CommandText.Contains("UPDATE dbo.Orders SET StatusId", StringComparison.Ordinal))
+            {
+                ConflictsToSimulate--;
+                return InterceptionResult<int>.SuppressWithResult(0);
+            }
+            await Rendezvous(command, ct);
+            return result;
         }
 
         public override async ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
             DbCommand command, CommandEventData data, InterceptionResult<DbDataReader> result, CancellationToken ct = default)
+        {
+            await Rendezvous(command, ct);
+            return result;
+        }
+
+        private async Task Rendezvous(DbCommand command, CancellationToken ct)
         {
             if (Volatile.Read(ref remaining) > 0 && command.CommandText.Contains(match, StringComparison.Ordinal))
             {
                 if (Interlocked.Decrement(ref remaining) == 0) arrived.TrySetResult();
                 await release.Task.WaitAsync(TimeSpan.FromSeconds(20), ct);
             }
-            return result;
         }
     }
 
@@ -105,9 +120,12 @@ public sealed class CustomerOrderTests
             await db.SaveChangesAsync();
         }
 
-        public async Task<Reply> Send(Actor? a, HttpMethod method, string suffix = "", object? input = null)
+        public Task<Reply> Send(Actor? a, HttpMethod method, string suffix = "", object? input = null) =>
+            SendTo(a, method, "/api/v1/orders" + suffix, input);
+
+        public async Task<Reply> SendTo(Actor? a, HttpMethod method, string path, object? input = null)
         {
-            using var req = new HttpRequestMessage(method, "/api/v1/orders" + suffix);
+            using var req = new HttpRequestMessage(method, path);
             if (a != null) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", a.Token);
             if (input != null) req.Content = JsonContent.Create(input);
             using var response = await http.SendAsync(req);
