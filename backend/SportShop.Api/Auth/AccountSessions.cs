@@ -37,7 +37,7 @@ public sealed class AccountSessions(SportShopDbContext db, IPasswordHasher<User>
     // All session writers lock the account before modifying its refresh tokens.
     private IQueryable<User> ByEmail(string email) => db.Users.FromSqlInterpolated(
         $"SELECT * FROM dbo.Users WITH (UPDLOCK) WHERE Email = {email}").Include(u => u.Role);
-    private IQueryable<User> ById(int id) => db.Users.FromSqlInterpolated(
+    internal static IQueryable<User> LockById(SportShopDbContext db, int id) => db.Users.FromSqlInterpolated(
         $"SELECT * FROM dbo.Users WITH (UPDLOCK) WHERE UserId = {id}").Include(u => u.Role);
 
     internal async Task<IssuedSession> LoginAsync(LoginRequest input, CancellationToken ct)
@@ -66,7 +66,7 @@ public sealed class AccountSessions(SportShopDbContext db, IPasswordHasher<User>
         var existing = db.RefreshTokens.Where(t => t.TokenHash == hash);
         var id = await existing.Select(t => (int?)t.UserId).SingleOrDefaultAsync(ct);
         if (id is null) throw AuthFailure.InvalidSession();
-        var user = await ById(id.Value).SingleOrDefaultAsync(ct);
+        var user = await LockById(db, id.Value).SingleOrDefaultAsync(ct);
         if (user is null || !user.IsActive) throw AuthFailure.InvalidSession();
         var now = DateTime.UtcNow;
         var claimed = await existing.Where(t => t.RevokedAt == null && t.ExpiresAt > now)
@@ -90,7 +90,7 @@ public sealed class AccountSessions(SportShopDbContext db, IPasswordHasher<User>
     public async Task ChangeAsync(int id, int version, ChangePasswordRequest input, CancellationToken ct)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
-        var user = await ById(id).SingleOrDefaultAsync(ct) ?? throw AuthFailure.InvalidSession();
+        var user = await LockById(db, id).SingleOrDefaultAsync(ct) ?? throw AuthFailure.InvalidSession();
         if (user.TokenVersion != version) throw new AuthFailure(401, "TOKEN_REVOKED", "Phiên đăng nhập đã bị thu hồi.");
         if (passwords.VerifyHashedPassword(user, user.PasswordHash, input.CurrentPassword) == PasswordVerificationResult.Failed)
             throw new AuthFailure(400, "VALIDATION_ERROR", "Mật khẩu hiện tại không đúng.", "currentPassword");

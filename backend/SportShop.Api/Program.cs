@@ -24,6 +24,7 @@ builder.Services.AddScoped<LookupData>();
 builder.Services.AddScoped<ProductData>();
 builder.Services.AddScoped<ProductPhotos>();
 builder.Services.AddScoped<StockData>();
+builder.Services.AddScoped<CustomerData>();
 builder.Services.AddScoped<PublicProducts>();
 builder.Services.AddScoped<CatalogLookups>();
 builder.Services.AddScoped<CustomerCart>();

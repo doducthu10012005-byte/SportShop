@@ -22,7 +22,7 @@ namespace SportShop.Api.Tests;
 public sealed partial class CustomerOrderTests
 {
     private sealed record Actor(int CartId, string Token);
-    private sealed record Reply(int Status, JsonElement Body)
+    private sealed record Reply(int Status, JsonElement Body, string? Cookie = null)
     {
         public JsonElement Data => Body.GetProperty("data");
         public void Error(int status, string code)
@@ -170,13 +170,20 @@ public sealed partial class CustomerOrderTests
         public Task<Reply> Send(Actor? a, HttpMethod method, string suffix = "", object? input = null) =>
             SendTo(a, method, "/api/v1/orders" + suffix, input);
 
-        public async Task<Reply> SendTo(Actor? a, HttpMethod method, string path, object? input = null)
+        public async Task<Reply> SendTo(Actor? a, HttpMethod method, string path, object? input = null, string? cookie = null)
         {
             using var req = new HttpRequestMessage(method, path);
             if (a != null) req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", a.Token);
             if (input != null) req.Content = JsonContent.Create(input);
+            if (cookie != null)
+            {
+                req.Headers.Add("Cookie", cookie);
+                req.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            }
             using var response = await http.SendAsync(req);
-            return new((int)response.StatusCode, await response.Content.ReadFromJsonAsync<JsonElement>());
+            var refresh = response.Headers.TryGetValues("Set-Cookie", out var headers)
+                ? headers.Single().Split(';')[0] : null;
+            return new((int)response.StatusCode, await response.Content.ReadFromJsonAsync<JsonElement>(), refresh);
         }
 
         public Task<Reply> Place(Actor? a, int method = 1) => Send(a, HttpMethod.Post, input: new {
@@ -217,7 +224,7 @@ public sealed partial class CustomerOrderTests
                 if (transferLogger != null) s.AddSingleton(transferLogger);
             });
         });
-        using var http = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        using var http = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost"), HandleCookies = false });
         using var scope = factory.Services.CreateScope();
         await using var db = new SportShopDbContext(options);
         await test(new Shop(http, scope.ServiceProvider.GetRequiredService<SessionTokens>(), db,
