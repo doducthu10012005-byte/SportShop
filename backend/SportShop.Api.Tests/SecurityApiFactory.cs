@@ -33,7 +33,13 @@ public sealed class SecurityApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IDbContextOptionsConfiguration<SportShopDbContext>>();
             services.AddDbContext<SportShopDbContext>(o => o.UseInMemoryDatabase(databaseName));
-            services.AddControllers().AddApplicationPart(typeof(SecurityProbeController).Assembly);
+            services.AddControllers().ConfigureApplicationPartManager(parts =>
+            {
+                // Phase 5 tests run probe actions to isolate middleware outcomes.
+                parts.ApplicationParts.Clear();
+                parts.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(
+                    typeof(SecurityProbeController).Assembly));
+            });
         });
     }
 

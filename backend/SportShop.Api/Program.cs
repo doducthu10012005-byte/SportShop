@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SportShop.Api.Middleware;
 using SportShop.Api.Configuration;
 using SportShop.Api.Data;
+using SportShop.Api.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,7 @@ builder.Services.AddDbContext<SportShopDbContext>(options =>
 });
 
 builder.Services.AddAccessTokenSecurity(builder.Configuration);
+builder.Services.AddSessionManagement();
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 
 // 3. Cấu hình CORS (Tuân thủ System Overview: Danh sách tường minh, hỗ trợ credentials, không dùng AllowAnyOrigin)
@@ -42,6 +44,13 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+if (args.FirstOrDefault() == "reset-admin-password")
+{
+    Environment.ExitCode = args.Length == 1 ? await AdminMaintenance.ResetInteractiveAsync(app.Services) : 1;
+    await app.DisposeAsync();
+    return;
+}
+await AdminMaintenance.BootstrapAsync(app.Services, app.Configuration);
 app.UseMiddleware<ExceptionMiddleware>();
 
 // 6. Cấu hình HTTP Request Pipeline
@@ -69,6 +78,8 @@ app.UseCors("CorsPolicy");
 // 9. Pipeline Xác thực & Phân quyền
 app.UseAuthentication();
 app.UseMiddleware<AccountSecurityMiddleware>();
+app.UseMiddleware<CookieRequestMiddleware>();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers().RequireAuthorization();
