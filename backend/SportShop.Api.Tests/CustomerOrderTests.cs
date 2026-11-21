@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SportShop.Api.Auth;
+using SportShop.Api.CustomerOrders;
 using SportShop.Api.Data;
 using SportShop.Api.Data.Entities;
 using Xunit;
@@ -43,6 +44,7 @@ public sealed partial class CustomerOrderTests
         public bool FailPaymentUpdate { get; set; }
         public int ConflictsToSimulate { get; set; }
         public DateTime? ConfirmationClock { get; set; }
+        public DateTime? ExpiryClock { get; set; }
         private bool confirmationUpdateReached;
 
         public void Arm(string sql, int count)
@@ -77,6 +79,9 @@ public sealed partial class CustomerOrderTests
                 confirmationUpdateReached = true;
                 SetClock(command, now);
             }
+            if (ExpiryClock is DateTime expiry &&
+                command.CommandText.Contains("SET PaymentStatus='Expired'", StringComparison.Ordinal))
+                SetClock(command, expiry);
             await Rendezvous(command, ct);
             return result;
         }
@@ -87,6 +92,9 @@ public sealed partial class CustomerOrderTests
             if (confirmationUpdateReached && ConfirmationClock is DateTime now &&
                 command.CommandText.Contains("SELECT SYSUTCDATETIME() AS [Value]", StringComparison.Ordinal))
                 SetClock(command, now);
+            if (ExpiryClock is DateTime expiry &&
+                command.CommandText.Contains("SELECT SYSUTCDATETIME() AS [Value]", StringComparison.Ordinal))
+                SetClock(command, expiry);
             await Rendezvous(command, ct);
             return result;
         }
@@ -111,11 +119,19 @@ public sealed partial class CustomerOrderTests
         }
     }
 
-    private sealed class Shop(HttpClient http, SessionTokens tokens, SportShopDbContext db, IConfiguration config, Gate gate)
+    private sealed class Shop(HttpClient http, SessionTokens tokens, SportShopDbContext db, IConfiguration config, Gate gate,
+        IServiceProvider services)
     {
         public SportShopDbContext Db => db;
         public IConfiguration Config => config;
         public Gate Gate => gate;
+        public Task Sweep() => services.GetRequiredService<BankTransferExpirySweep>().Run(CancellationToken.None);
+
+        public async Task ExpireCandidate(int orderId, int paymentId)
+        {
+            await using var scope = services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<OrderTransitions>().ExpireTransfer(orderId, paymentId, CancellationToken.None);
+        }
         public async Task<Actor> Account(string name, string role = "Customer")
         {
             var user = new User { Email = name + "@example.test", Role = await db.Roles.SingleAsync(r => r.RoleName == role),
@@ -182,6 +198,7 @@ public sealed partial class CustomerOrderTests
             builder.ConfigureLogging(l => l.ClearProviders());
             builder.ConfigureAppConfiguration((_, c) => c.AddInMemoryCollection(new Dictionary<string, string?> {
                 ["ConnectionStrings:DefaultConnection"] = connection, ["AdminBootstrap:Enabled"] = "false",
+                ["Payment:ExpiryJob:Enabled"] = "false",
                 ["Jwt:SecretKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)),
                 ["Payment:BankName"] = "", ["Payment:BankAccountNumber"] = "" }));
             builder.ConfigureServices(s => s.AddDbContext<SportShopDbContext>(o => o.AddInterceptors(gate)));
@@ -190,7 +207,7 @@ public sealed partial class CustomerOrderTests
         using var scope = factory.Services.CreateScope();
         await using var db = new SportShopDbContext(options);
         await test(new Shop(http, scope.ServiceProvider.GetRequiredService<SessionTokens>(), db,
-            factory.Services.GetRequiredService<IConfiguration>(), gate));
+            factory.Services.GetRequiredService<IConfiguration>(), gate, factory.Services));
     });
 
     [SqlDevelopmentFact]

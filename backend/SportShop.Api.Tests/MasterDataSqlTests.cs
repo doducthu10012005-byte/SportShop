@@ -98,6 +98,7 @@ public sealed class MasterDataSqlTests
                 builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:DefaultConnection"] = connection,
+                    ["Payment:ExpiryJob:Enabled"] = "false",
                     ["Jwt:SecretKey"] = key,
                     ["Jwt:Issuer"] = "master-tests",
                     ["Jwt:Audience"] = "master-tests",

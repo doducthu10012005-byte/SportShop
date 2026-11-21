@@ -55,6 +55,7 @@ public sealed class AuthSqlTests
             builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DefaultConnection"] = connection,
+                ["Payment:ExpiryJob:Enabled"] = "false",
                 ["AdminBootstrap:Enabled"] = "true", ["AdminBootstrap:Email"] = adminEmail,
                 ["AdminBootstrap:Password"] = adminPassword,
                 ["Jwt:SecretKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48))

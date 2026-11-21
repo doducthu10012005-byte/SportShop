@@ -31,6 +31,13 @@ builder.Services.AddScoped<Checkout>();
 builder.Services.AddScoped<OrderReader>();
 builder.Services.AddScoped<OrderTransitions>();
 builder.Services.AddScoped<BankTransferConfirmation>();
+builder.Services.AddOptions<BankTransferExpiryOptions>()
+    .BindConfiguration("Payment:ExpiryJob")
+    .Validate(o => o.IntervalMinutes is > 0 and <= int.MaxValue / 60_000,
+        "Payment:ExpiryJob:IntervalMinutes must be a positive timer interval.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<BankTransferExpirySweep>();
+builder.Services.AddHostedService<BankTransferExpiryWorker>();
 builder.Services.AddRateLimiter(options => options.AddPolicy("image-upload", context =>
     RateLimitPartition.GetFixedWindowLimiter(context.User.FindFirst("sub")?.Value ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) })));

@@ -58,6 +58,7 @@ public sealed class PublicCatalogTests
             builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DefaultConnection"] = connection, ["AdminBootstrap:Enabled"] = "false",
+                ["Payment:ExpiryJob:Enabled"] = "false",
                 ["Jwt:SecretKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48))
             }));
             builder.ConfigureServices(s => s.AddDbContext<SportShopDbContext>(o => o.AddInterceptors(commands)));
