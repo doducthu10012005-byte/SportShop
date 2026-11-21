@@ -1,24 +1,38 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SportShop.Api.Auth;
-using SportShop.Api.Data;
 
 namespace SportShop.Api.Controllers;
 
 [ApiController, Authorize, Route("api/v1/users/me"), ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class CurrentUserController(SportShopDbContext db, AccountSessions sessions) : ControllerBase
+public sealed class CurrentUserController(CurrentUserData data, AccountSessions sessions) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirst("sub")!.Value);
 
     [HttpGet]
-    public async Task<IActionResult> Me(CancellationToken ct)
-    {
-        var profile = await db.Users.AsNoTracking().Where(u => u.UserId == UserId)
-            .Select(u => new { u.UserId, u.Email, u.FullName, u.PhoneNumber, u.DateOfBirth, u.Gender, role = u.Role.RoleName })
-            .SingleOrDefaultAsync(ct) ?? throw AuthFailure.InvalidSession();
-        return Ok(new { success = true, message = "OK", data = profile });
-    }
+    public async Task<IActionResult> Me(CancellationToken ct) => Success(await data.Profile(UserId, ct));
+
+    [HttpPut]
+    public async Task<IActionResult> Update(ProfileInput input, CancellationToken ct) =>
+        Success(await data.UpdateProfile(UserId, input, ct));
+
+    [HttpGet("addresses")]
+    public async Task<IActionResult> Addresses([FromQuery] AddressQuery query, CancellationToken ct) =>
+        Success(await data.Addresses(UserId, query, ct));
+
+    [HttpPost("addresses")]
+    public async Task<IActionResult> AddAddress(AddressInput input, CancellationToken ct) =>
+        StatusCode(201, new { success = true, message = "Đã thêm địa chỉ.", data = await data.SaveAddress(UserId, null, input, ct) });
+
+    [HttpPut("addresses/{addressId:int}")]
+    public async Task<IActionResult> UpdateAddress(int addressId, AddressInput input, CancellationToken ct) =>
+        Success(await data.SaveAddress(UserId, addressId, input, ct));
+
+    [HttpDelete("addresses/{addressId:int}")]
+    public async Task<IActionResult> DeleteAddress(int addressId, CancellationToken ct) =>
+        Success(await data.DeleteAddress(UserId, addressId, ct));
+
+    private IActionResult Success(object? value) => Ok(new { success = true, message = "OK", data = value });
 
     [HttpPut("password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest input, CancellationToken ct)

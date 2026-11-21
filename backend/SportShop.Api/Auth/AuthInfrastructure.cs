@@ -13,6 +13,7 @@ internal static class AuthInfrastructure
     public static void AddSessionManagement(this IServiceCollection services)
     {
         services.AddScoped<AccountSessions>();
+        services.AddScoped<CurrentUserData>();
         services.AddScoped<SessionTokens>();
         services.AddSingleton(_ => PartitionedRateLimiter.Create<string, string>(email =>
             RateLimitPartition.GetFixedWindowLimiter(email, _ => new FixedWindowRateLimiterOptions
