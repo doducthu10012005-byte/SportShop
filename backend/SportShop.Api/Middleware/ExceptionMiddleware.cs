@@ -19,7 +19,7 @@ internal sealed class ExceptionMiddleware(RequestDelegate next, ILogger<Exceptio
             else
             {
                 context.Response.StatusCode = failure.Status;
-                await context.Response.WriteAsJsonAsync(new { success = false, message = "Dữ liệu không hợp lệ.",
+                await context.Response.WriteAsJsonAsync(new { success = false, message = failure.FieldErrorSummary,
                     errorCode = failure.Code, errors = new[] { new { field = failure.Field, message = failure.Message } },
                     traceId = ApiError.TraceId(context) }, context.RequestAborted);
             }
