@@ -3,6 +3,9 @@ using SportShop.Api.Middleware;
 using SportShop.Api.Configuration;
 using SportShop.Api.Data;
 using SportShop.Api.Auth;
+using SportShop.Api.Admin;
+using System.Threading.RateLimiting;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +17,13 @@ builder.Services.AddDbContext<SportShopDbContext>(options =>
 
 builder.Services.AddAccessTokenSecurity(builder.Configuration);
 builder.Services.AddSessionManagement();
+builder.Services.AddScoped<LookupData>();
+builder.Services.AddScoped<ProductData>();
+builder.Services.AddScoped<ProductPhotos>();
+builder.Services.AddScoped<StockData>();
+builder.Services.AddRateLimiter(options => options.AddPolicy("image-upload", context =>
+    RateLimitPartition.GetFixedWindowLimiter(context.User.FindFirst("sub")?.Value ?? "anonymous",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) })));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 
 // 3. Cấu hình CORS (Tuân thủ System Overview: Danh sách tường minh, hỗ trợ credentials, không dùng AllowAnyOrigin)
@@ -68,6 +78,18 @@ app.UseHttpsRedirection();
 
 // 7. Phục vụ Static Files (Hỗ trợ Phương án A: Cùng Origin phục vụ Frontend & Ảnh wwwroot/uploads)
 app.UseDefaultFiles();
+app.Environment.WebRootPath ??= Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+var uploadRoot = Directory.CreateDirectory(Path.Combine(app.Environment.WebRootPath, "uploads", "products"));
+var uploadFiles = new PhysicalFileProvider(uploadRoot.FullName);
+app.Lifetime.ApplicationStopped.Register(uploadFiles.Dispose);
+app.Map("/uploads/products", files => files.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = uploadFiles,
+    ContentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider(
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        { [".jpg"] = "image/jpeg", [".png"] = "image/png", [".webp"] = "image/webp" }),
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.XContentTypeOptions = "nosniff"
+}));
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -79,8 +101,8 @@ app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseMiddleware<AccountSecurityMiddleware>();
 app.UseMiddleware<CookieRequestMiddleware>();
-app.UseRateLimiter();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers().RequireAuthorization();
 

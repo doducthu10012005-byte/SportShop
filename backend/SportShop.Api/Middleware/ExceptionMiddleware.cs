@@ -12,7 +12,7 @@ internal sealed class ExceptionMiddleware(RequestDelegate next, ILogger<Exceptio
         {
             context.Abort();
         }
-        catch (Auth.AuthFailure failure) when (!context.Response.HasStarted)
+        catch (ApiFailure failure) when (!context.Response.HasStarted)
         {
             if (failure.Field is null)
                 await ApiError.WriteAsync(context, failure.Status, failure.Code, failure.Message);

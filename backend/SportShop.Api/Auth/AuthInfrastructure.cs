@@ -20,7 +20,7 @@ internal static class AuthInfrastructure
                 PermitLimit = 20, Window = TimeSpan.FromMinutes(1)
             })));
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
-        services.Configure<ApiBehaviorOptions>(o => o.InvalidModelStateResponseFactory = action =>
+        services.PostConfigure<ApiBehaviorOptions>(o => o.InvalidModelStateResponseFactory = action =>
         {
             var errors = action.ModelState.Where(e => e.Value?.Errors.Count > 0)
                 .Select(e => new { field = JsonNamingPolicy.CamelCase.ConvertName(e.Key), message = "Giá trị không hợp lệ." });

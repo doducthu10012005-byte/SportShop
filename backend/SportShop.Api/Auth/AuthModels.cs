@@ -39,11 +39,9 @@ internal sealed class IssuedSession(SessionBody body, string cookie, TimeSpan li
     public TimeSpan Lifetime { get; } = lifetime;
 }
 
-internal sealed class AuthFailure(int status, string code, string message, string? field = null) : Exception(message)
+internal sealed class AuthFailure(int status, string code, string message, string? field = null)
+    : Middleware.ApiFailure(status, code, message, field)
 {
-    public int Status { get; } = status;
-    public string Code { get; } = code;
-    public string? Field { get; } = field;
     public static AuthFailure InvalidSession() => new(401, "UNAUTHORIZED", "Phiên đăng nhập không hợp lệ.");
     public static AuthFailure InvalidCredentials() => new(401, "INVALID_CREDENTIALS", "Email hoặc mật khẩu không đúng.");
 }

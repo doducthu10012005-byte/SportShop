@@ -5,7 +5,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,38 +36,7 @@ public sealed class AuthSqlTests
     public void PasswordPolicy(string value, bool valid) => Assert.Equal(valid, new StrongPasswordAttribute().IsValid(value));
 
     [SqlDevelopmentFact]
-    public async Task AuthLifecycleOnSqlServer()
-    {
-        var secrets = new ConfigurationBuilder().AddUserSecrets<Program>().Build();
-        var connection = new SqlConnectionStringBuilder(secrets.GetConnectionString("DefaultConnection"));
-        if (connection.InitialCatalog != "SportShopDb" || !connection.IntegratedSecurity || connection.AttachDBFilename.Length > 0)
-            throw new InvalidOperationException("Expected Development SportShopDb with Windows authentication.");
-        var database = "SportShopAuthTest_" + Guid.NewGuid().ToString("N");
-        connection.InitialCatalog = "master";
-        await using var master = new SqlConnection(connection.ConnectionString);
-        await master.OpenAsync();
-        async Task Sql(string statement)
-        {
-            await using var cmd = master.CreateCommand();
-            cmd.CommandText = statement;
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        // CREATE must succeed before entering cleanup. Only this test owns this generated name.
-        await Sql($"CREATE DATABASE [{database}] COLLATE Vietnamese_100_CI_AS");
-        try
-        {
-            connection.InitialCatalog = database;
-            connection.Pooling = false;
-            var options = new DbContextOptionsBuilder<SportShopDbContext>().UseSqlServer(connection.ConnectionString).Options;
-            await using (var db = new SportShopDbContext(options)) await db.Database.MigrateAsync();
-            await RunAuthChecks(connection.ConnectionString, options);
-        }
-        finally
-        {
-            await Sql($"ALTER DATABASE [{database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{database}];");
-        }
-    }
+    public Task AuthLifecycleOnSqlServer() => TemporarySqlDatabase.Run(RunAuthChecks);
 
     private static string Password() => "Aa1" + Convert.ToHexString(RandomNumberGenerator.GetBytes(18));
 
