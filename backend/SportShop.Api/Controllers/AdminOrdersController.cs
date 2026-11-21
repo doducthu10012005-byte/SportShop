@@ -6,7 +6,8 @@ namespace SportShop.Api.Controllers;
 
 [Route("api/v1/admin/orders")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class AdminOrdersController(OrderReader reader, OrderTransitions transitions) : AdminController
+public sealed class AdminOrdersController(OrderReader reader, OrderTransitions transitions,
+    BankTransferConfirmation confirmation) : AdminController
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] AdminOrderQuery query, CancellationToken ct) =>
@@ -19,4 +20,8 @@ public sealed class AdminOrdersController(OrderReader reader, OrderTransitions t
     [HttpPut("{orderId:int}/status")]
     public async Task<IActionResult> Change(int orderId, ChangeStatusRequest input, CancellationToken ct) =>
         Ok(await transitions.AdminChange(ActorId, orderId, input, ct));
+
+    [HttpPut("{orderId:int}/payment")]
+    public async Task<IActionResult> ConfirmPayment(int orderId, ConfirmBankTransferRequest input, CancellationToken ct) =>
+        Success(await confirmation.Confirm(orderId, input, ct), message: "OK");
 }

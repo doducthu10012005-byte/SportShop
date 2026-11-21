@@ -42,6 +42,8 @@ public sealed partial class CustomerOrderTests
         public bool FailCartDelete { get; set; }
         public bool FailPaymentUpdate { get; set; }
         public int ConflictsToSimulate { get; set; }
+        public DateTime? ConfirmationClock { get; set; }
+        private bool confirmationUpdateReached;
 
         public void Arm(string sql, int count)
         {
@@ -61,10 +63,19 @@ public sealed partial class CustomerOrderTests
                 throw new InvalidOperationException("Test failure at cart deletion.");
             if (FailPaymentUpdate && command.CommandText.Contains("UPDATE dbo.Payments", StringComparison.Ordinal))
                 throw new InvalidOperationException("Test failure during payment update.");
-            if (ConflictsToSimulate > 0 && command.CommandText.Contains("UPDATE dbo.Orders SET StatusId", StringComparison.Ordinal))
+            if (ConflictsToSimulate > 0 && (command.CommandText.Contains("UPDATE dbo.Orders SET StatusId", StringComparison.Ordinal) ||
+                command.CommandText.Contains(ClaimForPayment, StringComparison.Ordinal)))
             {
                 ConflictsToSimulate--;
                 return InterceptionResult<int>.SuppressWithResult(0);
+            }
+            // Pin the clock in the conditional UPDATE to exercise an exact expiry boundary.
+            if (ConfirmationClock is DateTime now &&
+                command.CommandText.Contains("SET PaymentStatus='Paid', ReceivedAmount=", StringComparison.Ordinal) &&
+                command.CommandText.Contains("TransactionCode=", StringComparison.Ordinal))
+            {
+                confirmationUpdateReached = true;
+                SetClock(command, now);
             }
             await Rendezvous(command, ct);
             return result;
@@ -73,8 +84,21 @@ public sealed partial class CustomerOrderTests
         public override async ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
             DbCommand command, CommandEventData data, InterceptionResult<DbDataReader> result, CancellationToken ct = default)
         {
+            if (confirmationUpdateReached && ConfirmationClock is DateTime now &&
+                command.CommandText.Contains("SELECT SYSUTCDATETIME() AS [Value]", StringComparison.Ordinal))
+                SetClock(command, now);
             await Rendezvous(command, ct);
             return result;
+        }
+
+        private static void SetClock(DbCommand command, DateTime now)
+        {
+            var clock = command.CreateParameter();
+            clock.ParameterName = "@testNow";
+            clock.DbType = System.Data.DbType.DateTime2;
+            clock.Value = now;
+            command.Parameters.Add(clock);
+            command.CommandText = command.CommandText.Replace("SYSUTCDATETIME()", "@testNow", StringComparison.Ordinal);
         }
 
         private async Task Rendezvous(DbCommand command, CancellationToken ct)
