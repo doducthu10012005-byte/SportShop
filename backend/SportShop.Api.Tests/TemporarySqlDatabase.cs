@@ -7,7 +7,8 @@ namespace SportShop.Api.Tests;
 
 internal static class TemporarySqlDatabase
 {
-    public static async Task Run(Func<string, DbContextOptions<SportShopDbContext>, Task> verify)
+    public static async Task Run(Func<string, DbContextOptions<SportShopDbContext>, Task> verify,
+        string? startingMigration = null)
     {
         var secrets = new ConfigurationBuilder().AddUserSecrets<Program>().Build();
         var connection = new SqlConnectionStringBuilder(secrets.GetConnectionString("DefaultConnection"));
@@ -31,7 +32,11 @@ internal static class TemporarySqlDatabase
             connection.InitialCatalog = database;
             connection.Pooling = false;
             var options = new DbContextOptionsBuilder<SportShopDbContext>().UseSqlServer(connection.ConnectionString).Options;
-            await using (var db = new SportShopDbContext(options)) await db.Database.MigrateAsync();
+            await using (var db = new SportShopDbContext(options))
+            {
+                if (startingMigration == null) await db.Database.MigrateAsync();
+                else await db.Database.MigrateAsync(startingMigration);
+            }
             await verify(connection.ConnectionString, options);
         }
         finally

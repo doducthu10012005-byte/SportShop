@@ -609,7 +609,7 @@ public class SportShopDbContext : DbContext
                 t.HasCheckConstraint("CK_Payments_ReceivedAmount", "[ReceivedAmount] IS NULL OR [ReceivedAmount] >= 0");
                 t.HasCheckConstraint("CK_Payments_Status", "[PaymentStatus] IN ('Pending', 'Paid', 'Failed', 'Expired', 'RefundPending', 'Refunded')");
                 t.HasCheckConstraint("CK_Payments_Status_ReceivedAmount_PaidAt",
-                    "([PaymentStatus] IN ('Paid', 'RefundPending', 'Refunded') AND [ReceivedAmount] = [Amount] AND [PaidAt] IS NOT NULL) OR " +
+                    "([PaymentStatus] IN ('Paid', 'RefundPending', 'Refunded') AND [ReceivedAmount] IS NOT NULL AND [ReceivedAmount] = [Amount] AND [PaidAt] IS NOT NULL) OR " +
                     "([PaymentStatus] IN ('Pending', 'Failed', 'Expired') AND [ReceivedAmount] IS NULL AND [PaidAt] IS NULL)");
                 t.HasCheckConstraint("CK_Payments_StrictExpiration",
                     "([PaymentStatus] IN ('Paid', 'RefundPending', 'Refunded') AND [ExpiresAt] IS NOT NULL AND [PaidAt] < [ExpiresAt]) OR " +
