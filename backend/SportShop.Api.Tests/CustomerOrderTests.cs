@@ -42,6 +42,7 @@ public sealed partial class CustomerOrderTests
         private TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public bool FailCartDelete { get; set; }
         public bool FailPaymentUpdate { get; set; }
+        public bool FailAfterRefundUpdate { get; set; }
         public int ConflictsToSimulate { get; set; }
         public DateTime? ConfirmationClock { get; set; }
         public DateTime? ExpiryClock { get; set; }
@@ -65,6 +66,8 @@ public sealed partial class CustomerOrderTests
                 throw new InvalidOperationException("Test failure at cart deletion.");
             if (FailPaymentUpdate && command.CommandText.Contains("UPDATE dbo.Payments", StringComparison.Ordinal))
                 throw new InvalidOperationException("Test failure during payment update.");
+            if (FailAfterRefundUpdate && command.CommandText.Contains("SET PaymentStatus='Refunded'", StringComparison.Ordinal))
+                command.CommandText += "\nTHROW 51005, 'Test error after refund update.', 1;";
             if (ConflictsToSimulate > 0 && (command.CommandText.Contains("UPDATE dbo.Orders SET StatusId", StringComparison.Ordinal) ||
                 command.CommandText.Contains(ClaimForPayment, StringComparison.Ordinal)))
             {
@@ -188,7 +191,8 @@ public sealed partial class CustomerOrderTests
         }
     }
 
-    private static Task Run(Func<Shop, Task> test) => TemporarySqlDatabase.Run(async (connection, options) =>
+    private static Task Run(Func<Shop, Task> test, ILogger<RefundConfirmation>? refundLogger = null) =>
+        TemporarySqlDatabase.Run(async (connection, options) =>
     {
         var gate = new Gate();
         using var root = new WebApplicationFactory<Program>();
@@ -201,7 +205,11 @@ public sealed partial class CustomerOrderTests
                 ["Payment:ExpiryJob:Enabled"] = "false",
                 ["Jwt:SecretKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)),
                 ["Payment:BankName"] = "", ["Payment:BankAccountNumber"] = "" }));
-            builder.ConfigureServices(s => s.AddDbContext<SportShopDbContext>(o => o.AddInterceptors(gate)));
+            builder.ConfigureServices(s =>
+            {
+                s.AddDbContext<SportShopDbContext>(o => o.AddInterceptors(gate));
+                if (refundLogger != null) s.AddSingleton(refundLogger);
+            });
         });
         using var http = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
         using var scope = factory.Services.CreateScope();

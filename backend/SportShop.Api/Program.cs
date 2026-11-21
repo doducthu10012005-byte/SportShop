@@ -31,6 +31,7 @@ builder.Services.AddScoped<Checkout>();
 builder.Services.AddScoped<OrderReader>();
 builder.Services.AddScoped<OrderTransitions>();
 builder.Services.AddScoped<BankTransferConfirmation>();
+builder.Services.AddScoped<RefundConfirmation>();
 builder.Services.AddOptions<BankTransferExpiryOptions>()
     .BindConfiguration("Payment:ExpiryJob")
     .Validate(o => o.IntervalMinutes is > 0 and <= int.MaxValue / 60_000,
