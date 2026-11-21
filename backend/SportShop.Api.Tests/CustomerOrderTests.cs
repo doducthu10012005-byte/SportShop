@@ -43,6 +43,7 @@ public sealed partial class CustomerOrderTests
         public bool FailCartDelete { get; set; }
         public bool FailPaymentUpdate { get; set; }
         public bool FailAfterRefundUpdate { get; set; }
+        public bool FailAfterTransferUpdate { get; set; }
         public int ConflictsToSimulate { get; set; }
         public DateTime? ConfirmationClock { get; set; }
         public DateTime? ExpiryClock { get; set; }
@@ -68,6 +69,9 @@ public sealed partial class CustomerOrderTests
                 throw new InvalidOperationException("Test failure during payment update.");
             if (FailAfterRefundUpdate && command.CommandText.Contains("SET PaymentStatus='Refunded'", StringComparison.Ordinal))
                 command.CommandText += "\nTHROW 51005, 'Test error after refund update.', 1;";
+            if (FailAfterTransferUpdate && command.CommandText.Contains("TransactionCode=", StringComparison.Ordinal) &&
+                command.CommandText.Contains("SET PaymentStatus='Paid'", StringComparison.Ordinal))
+                command.CommandText += "\nTHROW 51006, 'Test error after bank transfer update.', 1;";
             if (ConflictsToSimulate > 0 && (command.CommandText.Contains("UPDATE dbo.Orders SET StatusId", StringComparison.Ordinal) ||
                 command.CommandText.Contains(ClaimForPayment, StringComparison.Ordinal)))
             {
@@ -191,7 +195,8 @@ public sealed partial class CustomerOrderTests
         }
     }
 
-    private static Task Run(Func<Shop, Task> test, ILogger<RefundConfirmation>? refundLogger = null) =>
+    private static Task Run(Func<Shop, Task> test, ILogger<RefundConfirmation>? refundLogger = null,
+        ILogger<BankTransferConfirmation>? transferLogger = null) =>
         TemporarySqlDatabase.Run(async (connection, options) =>
     {
         var gate = new Gate();
@@ -209,6 +214,7 @@ public sealed partial class CustomerOrderTests
             {
                 s.AddDbContext<SportShopDbContext>(o => o.AddInterceptors(gate));
                 if (refundLogger != null) s.AddSingleton(refundLogger);
+                if (transferLogger != null) s.AddSingleton(transferLogger);
             });
         });
         using var http = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });

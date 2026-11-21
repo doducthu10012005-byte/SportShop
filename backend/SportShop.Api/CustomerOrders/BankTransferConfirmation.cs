@@ -15,14 +15,15 @@ public sealed class ConfirmBankTransferRequest
     public JsonElement ReceivedAmount { get; init; }
 }
 
-public sealed class BankTransferConfirmation(SportShopDbContext db, OrderReader reader)
+public sealed class BankTransferConfirmation(SportShopDbContext db, OrderReader reader, ILogger<BankTransferConfirmation> logger)
 {
+    private static readonly EventId TransferConfirmed = new(1, nameof(TransferConfirmed));
     private const decimal MaxMoney = 9999999999999999.99m;
-    private sealed record OrderState(string Status, byte[] Version, decimal Total);
+    private sealed record OrderState(string Status, byte[] Version, decimal Total, string Code);
     private sealed record PaymentState(int Id, string Method, string Status, DateTime? ExpiresAt,
         decimal Amount, decimal? ReceivedAmount, bool CodeMatches);
 
-    internal async Task<object> Confirm(int orderId, ConfirmBankTransferRequest request, CancellationToken ct)
+    internal async Task<object> Confirm(int orderId, int adminId, ConfirmBankTransferRequest request, CancellationToken ct)
     {
         var code = request.TransactionCode?.Trim();
         if (code is null || code.Length is < 1 or > 100)
@@ -64,8 +65,13 @@ public sealed class BankTransferConfirmation(SportShopDbContext db, OrderReader 
                     """, ct);
                 if (updated != 1) throw new DbUpdateConcurrencyException();
 
+                var paidAt = await db.Payments.Where(p => p.PaymentId == payment.Id)
+                    .Select(p => p.PaidAt!.Value).SingleAsync(ct);
                 var detail = await reader.Detail(null, orderId, ct);
                 await tx.CommitAsync(ct);
+                logger.LogInformation(TransferConfirmed,
+                    "Admin {AdminId} confirmed bank transfer for order {OrderCode} ({OrderId}), payment {PaymentId} at {PaidAtUtc}. Result: {Result}.",
+                    adminId, order.Code, orderId, payment.Id, DateTime.SpecifyKind(paidAt, DateTimeKind.Utc), "Success");
                 return detail;
             }
             catch (SqlException ex) when (ex.Number is 2601 or 2627 &&
@@ -111,7 +117,7 @@ public sealed class BankTransferConfirmation(SportShopDbContext db, OrderReader 
     private async Task<OrderState> ReadOrder(int orderId, string code, CancellationToken ct)
     {
         var order = await db.Orders.AsNoTracking().Where(o => o.OrderId == orderId)
-            .Select(o => new OrderState(o.Status.StatusCode, o.RowVersion, o.TotalAmount)).SingleOrDefaultAsync(ct)
+            .Select(o => new OrderState(o.Status.StatusCode, o.RowVersion, o.TotalAmount, o.OrderCode)).SingleOrDefaultAsync(ct)
             ?? throw new ApiFailure(404, "NOT_FOUND", "Không tìm thấy đơn hàng.");
         if (order.Status is "SHIPPING" or "DELIVERED") throw Invalid();
         if (order.Status == "CANCELLED")

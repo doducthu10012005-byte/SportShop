@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SportShop.Api.Data;
 using SportShop.Api.Data.Entities;
+using SportShop.Api.Middleware;
 
 namespace SportShop.Api.Admin;
 
@@ -83,6 +84,19 @@ public sealed class StockData(SportShopDbContext db)
                 await using var tx = await db.Database.BeginTransactionAsync(ct);
                 var row = await db.Inventories.SingleOrDefaultAsync(i => i.VariantId == id, ct) ?? throw Catalog.Missing();
                 var balance = Balance(row.QuantityOnHand, input);
+                // Work out what could still be returned before taking the inventory write lock.
+                // Checkout and restock both change RowVersion, invalidating a concurrent calculation.
+                var returnable = await db.OrderItems.Where(i => i.VariantId == id &&
+                        (i.Order.Status.StatusCode == "PENDING" || i.Order.Status.StatusCode == "CONFIRMED"))
+                    .SumAsync(i => (long)i.Quantity, ct);
+                if (returnable > int.MaxValue - (long)balance)
+                {
+                    var currentVersion = await db.Inventories.Where(i => i.InventoryId == row.InventoryId)
+                        .Select(i => i.RowVersion).SingleAsync(ct);
+                    if (!row.RowVersion.AsSpan().SequenceEqual(currentVersion)) throw new DbUpdateConcurrencyException();
+                    throw new ApiFailure(400, "VALIDATION_ERROR",
+                        "Số lượng tồn kho vượt giới hạn sau khi tính hàng có thể hoàn từ các đơn đang xử lý.", "quantity");
+                }
                 var now = DateTime.UtcNow;
                 db.InventoryTransactions.Add(new InventoryTransaction
                 {

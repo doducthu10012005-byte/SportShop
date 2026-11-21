@@ -11,7 +11,7 @@ public sealed partial class CustomerOrderTests
 {
     private const string RefundedPreviously = "Khoản thanh toán đã được xác nhận hoàn tiền trước đó.";
 
-    private sealed class RefundAudit : ILogger<RefundConfirmation>
+    private sealed class AuditLog<T> : ILogger<T>
     {
         public ConcurrentQueue<IReadOnlyDictionary<string, object?>> Entries { get; } = new();
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
@@ -43,7 +43,7 @@ public sealed partial class CustomerOrderTests
     [SqlDevelopmentFact]
     public Task RefundRequiresAdminAndExplicitConfirmationThenRecordsOnlyPayment()
     {
-        var audit = new RefundAudit();
+        var audit = new AuditLog<RefundConfirmation>();
         return Run(async shop =>
         {
             EnableTestBank(shop);
@@ -99,7 +99,7 @@ public sealed partial class CustomerOrderTests
     [SqlDevelopmentFact]
     public Task ConcurrentRefundsWriteAndAuditExactlyOnce()
     {
-        var audit = new RefundAudit();
+        var audit = new AuditLog<RefundConfirmation>();
         return Run(async shop =>
         {
             EnableTestBank(shop);
@@ -146,7 +146,7 @@ public sealed partial class CustomerOrderTests
     [SqlDevelopmentFact]
     public Task SqlFailureAfterRefundUpdateRollsBackAndDoesNotAudit()
     {
-        var audit = new RefundAudit();
+        var audit = new AuditLog<RefundConfirmation>();
         return Run(async shop =>
         {
             EnableTestBank(shop);

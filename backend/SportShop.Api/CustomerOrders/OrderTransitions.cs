@@ -178,9 +178,9 @@ public sealed class OrderTransitions(SportShopDbContext db, OrderReader reader)
         {
             var affected = await db.Database.ExecuteSqlInterpolatedAsync($"""
                 UPDATE dbo.Inventories SET QuantityOnHand=QuantityOnHand+{line.Quantity}, UpdatedAt=SYSUTCDATETIME()
-                WHERE VariantId={line.VariantId}
+                WHERE VariantId={line.VariantId} AND QuantityOnHand<={int.MaxValue - line.Quantity}
                 """, ct);
-            if (affected != 1) throw new InvalidOperationException("Inventory missing during order restock.");
+            if (affected != 1) throw new InvalidOperationException("Inventory unavailable or beyond capacity for order restock.");
             var balance = await db.Inventories.Where(i => i.VariantId == line.VariantId)
                 .Select(i => new { i.QuantityOnHand, i.UpdatedAt }).SingleAsync(ct);
             db.InventoryTransactions.Add(new InventoryTransaction { OrderItemId = line.OrderItemId, VariantId = line.VariantId,

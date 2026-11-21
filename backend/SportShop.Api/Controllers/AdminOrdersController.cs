@@ -23,7 +23,7 @@ public sealed class AdminOrdersController(OrderReader reader, OrderTransitions t
 
     [HttpPut("{orderId:int}/payment")]
     public async Task<IActionResult> ConfirmPayment(int orderId, ConfirmBankTransferRequest input, CancellationToken ct) =>
-        Success(await confirmation.Confirm(orderId, input, ct), message: "OK");
+        Success(await confirmation.Confirm(orderId, ActorId, input, ct), message: "OK");
 
     [HttpPut("{orderId:int}/refund")]
     public async Task<IActionResult> ConfirmRefund(int orderId, ConfirmRefundRequest input, CancellationToken ct)

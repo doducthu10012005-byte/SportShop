@@ -142,7 +142,7 @@ public sealed partial class CustomerOrderTests
         s.Gate.FailPaymentUpdate = false;
         Assert.Equal(before, await Snapshot(s));
 
-        // Force an actual SQL overflow in replenishment after updating the payment.
+        // Simulate a legacy balance outside the capacity guard before replenishment.
         await s.Db.Inventories.Where(i => i.VariantId == badStock.VariantId)
             .ExecuteUpdateAsync(u => u.SetProperty(i => i.QuantityOnHand, int.MaxValue));
         var originalVersion = await s.Db.Orders.Where(o => o.OrderId == failing).Select(o => o.RowVersion).SingleAsync();
