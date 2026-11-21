@@ -6,6 +6,7 @@ using SportShop.Api.Auth;
 using SportShop.Api.Admin;
 using SportShop.Api.PublicCatalog;
 using SportShop.Api.ShoppingCart;
+using SportShop.Api.CustomerOrders;
 using System.Threading.RateLimiting;
 using Microsoft.Extensions.FileProviders;
 
@@ -26,6 +27,8 @@ builder.Services.AddScoped<StockData>();
 builder.Services.AddScoped<PublicProducts>();
 builder.Services.AddScoped<CatalogLookups>();
 builder.Services.AddScoped<CustomerCart>();
+builder.Services.AddScoped<Checkout>();
+builder.Services.AddScoped<OrderReader>();
 builder.Services.AddRateLimiter(options => options.AddPolicy("image-upload", context =>
     RateLimitPartition.GetFixedWindowLimiter(context.User.FindFirst("sub")?.Value ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) })));

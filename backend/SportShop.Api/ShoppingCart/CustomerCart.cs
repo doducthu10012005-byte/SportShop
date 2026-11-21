@@ -80,9 +80,7 @@ public sealed class CustomerCart(SportShopDbContext db)
             {
                 await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 // Every cart mutation locks the same owner's row before inspecting its items.
-                var cart = await db.Carts.FromSqlInterpolated(
-                    $"SELECT * FROM [Carts] WITH (UPDLOCK, ROWLOCK) WHERE [UserId] = {userId}")
-                    .SingleOrDefaultAsync(ct) ?? throw NotFound();
+                var cart = await LockCart(db, userId, ct) ?? throw NotFound();
                 cart.UpdatedAt = DateTime.UtcNow;
                 await change(cart);
                 await db.SaveChangesAsync(ct);
@@ -97,4 +95,8 @@ public sealed class CustomerCart(SportShopDbContext db)
             }
         }
     }
+
+    internal static Task<Cart?> LockCart(SportShopDbContext db, int userId, CancellationToken ct) =>
+        db.Carts.FromSqlInterpolated($"SELECT * FROM [Carts] WITH (UPDLOCK, ROWLOCK) WHERE [UserId] = {userId}")
+            .SingleOrDefaultAsync(ct);
 }

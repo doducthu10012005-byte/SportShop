@@ -14,13 +14,13 @@ internal sealed class ExceptionMiddleware(RequestDelegate next, ILogger<Exceptio
         }
         catch (ApiFailure failure) when (!context.Response.HasStarted)
         {
-            if (failure.Field is null)
+            if (failure.Errors.Count == 0)
                 await ApiError.WriteAsync(context, failure.Status, failure.Code, failure.Message);
             else
             {
                 context.Response.StatusCode = failure.Status;
                 await context.Response.WriteAsJsonAsync(new { success = false, message = failure.FieldErrorSummary,
-                    errorCode = failure.Code, errors = new[] { new { field = failure.Field, message = failure.Message } },
+                    errorCode = failure.Code, errors = failure.Errors,
                     traceId = ApiError.TraceId(context) }, context.RequestAborted);
             }
         }
