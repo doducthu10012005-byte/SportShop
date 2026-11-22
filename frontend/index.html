@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SportShop — khám phá dụng cụ và trang phục cho bộ môn bạn yêu thích.">
+  <title>SportShop — Vận động theo cách của bạn</title>
+  <link rel="stylesheet" href="./css/site.css">
+  <script type="module" src="./js/pages/store.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header" id="top">
+    <div class="frame header-row">
+      <a class="brand" href="./" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
+        <a href="#main" aria-current="page">Trang chủ</a>
+        <a href="#sports">Bộ môn</a>
+        <a href="#help">Trợ giúp</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+        <button class="icon-button bag-button" type="button" data-dialog="cart-preview" aria-label="Giỏ hàng"><span class="bag-icon" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="frame" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title">Tập tốt hơn.<br><span>Chơi hết mình.</span></h1>
+        <p>Từ đường chạy đến phòng tập, tìm trang bị phù hợp với cách bạn vận động.</p>
+        <a class="button button-accent" href="#sports">Khám phá bộ môn <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
+    <section class="sport-section" id="sports" aria-labelledby="sports-title">
+      <div class="section-heading">
+        <h2 id="sports-title">Chọn bộ môn</h2>
+        <p>Tìm trang bị cho môn thể thao bạn yêu thích.</p>
+      </div>
+      <div class="sport-grid">
+        <button class="sport-card running" type="button" data-sport="running">
+          <span class="sport-card-title">Chạy bộ</span><span class="card-arrow" aria-hidden="true">↗</span>
+        </button>
+        <button class="sport-card training" type="button" data-sport="training">
+          <span class="sport-card-title">Tập luyện</span><span class="card-arrow" aria-hidden="true">↗</span>
+        </button>
+        <button class="sport-card racket" type="button" data-sport="racket">
+          <span class="sport-card-title">Thể thao sân vợt</span><span class="card-arrow" aria-hidden="true">↗</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="help">
+    <div class="frame footer-row">
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav aria-label="Trợ giúp và quản trị">
+        <button class="text-button" type="button" data-dialog="help-dialog">Trợ giúp</button>
+        <a href="./admin/">Quản trị</a>
+        <a href="#top">Về đầu trang ↑</a>
+      </nav>
+    </div>
+  </footer>
+
+  <dialog class="dialog" id="sport-guide" aria-labelledby="guide-title">
+    <form method="dialog"><button class="dialog-close icon-button" aria-label="Đóng" autofocus>×</button></form>
+    <h2 id="guide-title" data-guide-title>Chọn trang bị</h2>
+    <p data-guide-description></p>
+  </dialog>
+  <dialog class="dialog" id="cart-preview" aria-labelledby="cart-title">
+    <form method="dialog"><button class="dialog-close icon-button" aria-label="Đóng" autofocus>×</button></form>
+    <h2 id="cart-title">Giỏ hàng</h2>
+    <div class="state-panel" data-state="empty"><span class="state-icon" aria-hidden="true"></span><div>
+      <strong>Giỏ hàng đang trống</strong><p>Khám phá các bộ môn để tìm trang bị bạn cần.</p>
+    </div></div>
+  </dialog>
+  <dialog class="dialog" id="help-dialog" aria-labelledby="help-title">
+    <form method="dialog"><button class="dialog-close icon-button" aria-label="Đóng" autofocus>×</button></form>
+    <h2 id="help-title">Trợ giúp</h2>
+    <p>Mở một bộ môn để xem gợi ý chọn trang bị trước khi mua.</p>
+  </dialog>
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+</body>
+</html>
