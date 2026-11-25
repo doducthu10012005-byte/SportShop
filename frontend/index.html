@@ -6,6 +6,7 @@
   <meta name="description" content="SportShop — khám phá dụng cụ và trang phục cho bộ môn bạn yêu thích.">
   <title>SportShop — Vận động theo cách của bạn</title>
   <link rel="stylesheet" href="./css/site.css">
+  <link rel="stylesheet" href="./css/catalog.css">
   <script type="module" src="./js/pages/store.js"></script>
 </head>
 <body>
@@ -15,6 +16,7 @@
       <a class="brand" href="./" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
       <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
         <a href="#main" aria-current="page">Trang chủ</a>
+        <a href="./products/">Sản phẩm</a>
         <a href="#sports">Bộ môn</a>
         <a href="#help">Trợ giúp</a>
       </nav>
@@ -33,6 +35,18 @@
         <p>Từ đường chạy đến phòng tập, tìm trang bị phù hợp với cách bạn vận động.</p>
         <a class="button button-accent" href="#sports">Khám phá bộ môn <span aria-hidden="true">↗</span></a>
       </div>
+    </section>
+    <section class="featured-section" aria-labelledby="featured-title">
+      <div class="section-heading">
+        <h2 id="featured-title">Sản phẩm mới</h2>
+        <a class="text-link" href="./products/">Xem tất cả sản phẩm <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="state-panel catalog-state" data-featured-state data-state="loading">
+        <span class="state-icon" aria-hidden="true"></span>
+        <div aria-live="polite"><strong data-state-title>Đang tải sản phẩm</strong><p data-state-message></p></div>
+        <button type="button" class="button button-outline" data-retry hidden>Thử lại</button>
+      </div>
+      <ul class="product-grid featured-grid" data-featured-products aria-label="Sản phẩm mới"></ul>
     </section>
 
     <section class="sport-section" id="sports" aria-labelledby="sports-title">
@@ -74,7 +88,7 @@
     <form method="dialog"><button class="dialog-close icon-button" aria-label="Đóng" autofocus>×</button></form>
     <h2 id="cart-title">Giỏ hàng</h2>
     <div class="state-panel" data-state="empty"><span class="state-icon" aria-hidden="true"></span><div>
-      <strong>Giỏ hàng đang trống</strong><p>Khám phá các bộ môn để tìm trang bị bạn cần.</p>
+      <strong>Giỏ hàng chưa khả dụng</strong><p>Bạn có thể duyệt sản phẩm trong cửa hàng.</p>
     </div></div>
   </dialog>
   <dialog class="dialog" id="help-dialog" aria-labelledby="help-title">

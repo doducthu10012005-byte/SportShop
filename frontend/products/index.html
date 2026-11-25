@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tìm dụng cụ và trang phục thể thao tại SportShop.">
+  <title>Sản phẩm — SportShop</title>
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="stylesheet" href="../css/catalog.css">
+  <script type="module" src="../js/pages/products.js"></script>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header">
+    <div class="frame header-row">
+      <a class="brand" href="../" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
+        <a href="../">Trang chủ</a>
+        <a href="./" aria-current="page">Sản phẩm</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-outline account-link" href="../account/" data-account-link>Tài khoản</a>
+        <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="frame catalog-main" tabindex="-1">
+    <h1 class="catalog-title">Sản phẩm thể thao</h1>
+    <div class="catalog-layout">
+      <div class="catalog-search">
+        <label class="catalog-field">Tìm sản phẩm
+          <input name="keyword" type="search" form="catalog-filters" placeholder="Tìm theo tên sản phẩm">
+        </label>
+        <label class="catalog-field">Sắp xếp
+          <select name="sort" form="catalog-filters">
+            <option value="newest">Mới nhất</option>
+            <option value="price">Giá tăng dần</option>
+            <option value="-price">Giá giảm dần</option>
+            <option value="name">Tên A–Z</option>
+          </select>
+        </label>
+        <button class="button button-primary" type="submit" form="catalog-filters">Tìm kiếm</button>
+      </div>
+      <aside class="filter-panel" aria-labelledby="filters-title">
+        <details data-filter-panel open>
+          <summary id="filters-title">Bộ lọc</summary>
+          <form id="catalog-filters" method="get">
+            <a class="text-link clear-filters" href="./" data-clear-filters>Xóa lọc</a>
+            <fieldset class="lookup-filters" data-lookups disabled>
+              <legend class="visually-hidden">Danh mục và thuộc tính</legend>
+              <label class="catalog-field">Danh mục
+                <select name="categoryId"><option value="">Tất cả danh mục</option></select>
+              </label>
+              <fieldset class="filter-group">
+                <legend>Thương hiệu</legend><div class="filter-options" data-options="brandId"></div>
+              </fieldset>
+              <fieldset class="filter-group">
+                <legend>Kích thước</legend><div class="filter-options" data-options="sizeId"></div>
+              </fieldset>
+              <fieldset class="filter-group">
+                <legend>Màu sắc</legend><div class="filter-options" data-options="colorId"></div>
+              </fieldset>
+            </fieldset>
+            <div class="lookup-status" aria-live="polite">
+              <p data-lookup-message>Đang tải bộ lọc…</p>
+              <button class="text-button text-link" type="button" data-lookup-retry hidden>Thử tải lại bộ lọc</button>
+            </div>
+            <fieldset class="filter-group">
+              <legend>Giá (₫)</legend>
+              <div class="price-fields">
+                <label class="catalog-field">Từ <input name="minPrice" type="number" min="0" step="any" inputmode="decimal"></label>
+                <label class="catalog-field">Đến <input name="maxPrice" type="number" min="0" step="any" inputmode="decimal"></label>
+              </div>
+            </fieldset>
+            <label class="filter-choice"><input name="inStock" type="checkbox" value="true"> Chỉ sản phẩm còn hàng</label>
+            <p class="form-error" data-filter-error role="alert" hidden></p>
+            <button class="button button-primary" type="submit">Áp dụng bộ lọc</button>
+          </form>
+        </details>
+      </aside>
+
+      <section class="catalog-results" aria-labelledby="results-title">
+        <div class="results-heading">
+          <h2 id="results-title" tabindex="-1">Kết quả</h2>
+          <p data-result-count role="status"></p>
+        </div>
+        <div class="state-panel catalog-state" data-results-state data-state="loading">
+          <span class="state-icon" aria-hidden="true"></span>
+          <div aria-live="polite"><strong data-state-title>Đang tải sản phẩm</strong><p data-state-message></p></div>
+          <button class="button button-outline" type="button" data-retry hidden>Thử lại</button>
+        </div>
+        <ul class="product-grid" data-products aria-label="Danh sách sản phẩm"></ul>
+        <nav class="catalog-pagination" aria-label="Phân trang sản phẩm" hidden>
+          <a class="button button-outline" data-prev>Trang trước</a>
+          <span data-page-label></span>
+          <a class="button button-outline" data-next>Trang sau</a>
+        </nav>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="frame footer-row">
+      <a class="brand" href="../">Sport<span>Shop</span></a>
+      <nav aria-label="Điều hướng cuối trang"><a href="../#help">Trợ giúp</a><a href="#main">Về đầu trang ↑</a></nav>
+    </div>
+  </footer>
+</body>
+</html>

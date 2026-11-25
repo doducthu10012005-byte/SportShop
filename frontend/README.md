@@ -23,10 +23,17 @@ Mở `https://localhost:5500/account/` để đăng nhập hoặc đăng ký Cus
 
 Để thử thủ công, dùng tài khoản Customer và Admin có sẵn trong Backend thử nghiệm riêng. Thử đăng nhập, tải lại trang tài khoản để kiểm tra khôi phục phiên, rồi mở `/admin/` với từng vai trò. Thử đổi mật khẩu bằng tài khoản thử và kiểm tra đăng nhập lại. Sau khi đăng xuất, tải lại trang để xác nhận phiên đã kết thúc.
 
+## Danh mục sản phẩm
+
+Mở `https://localhost:5500/` để xem tối đa bốn sản phẩm mới nhất hoặc vào `https://localhost:5500/products/` để tìm kiếm và lọc. Chọn một thẻ để xem chi tiết, ảnh, màu, kích thước, giá và tồn kho của từng biến thể. Nút thêm vào giỏ hiển thị trạng thái chưa khả dụng.
+
+Các trang dùng API Public Catalog trên Backend đang cấu hình. Ảnh sản phẩm được tải từ origin của Backend. Để duyệt dữ liệu giả mà không cần Backend hoặc SQL Server, chạy bộ kiểm thử Catalog bên dưới.
+
 ## Kiểm thử Chromium với API giả lập
 
 Dùng chứng chỉ HTTPS đã xuất ở trên. Bộ kiểm thử cần Chrome hoặc Chromium và Python 3.14. Hai máy chủ HTTPS dùng cổng ngẫu nhiên trên localhost và dữ liệu giả lập.
 
 ~~~powershell
 python frontend/tests/auth_browser.py --cert $frontendCert --key $frontendKey
+python frontend/tests/catalog_browser.py --cert $frontendCert --key $frontendKey
 ~~~

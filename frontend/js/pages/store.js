@@ -1,15 +1,22 @@
 import "../ui.js";
-import { restoreSession, watchSession } from "../auth.js";
+import "../store-session.js";
+import { catalogError, getCatalog, renderProducts, setCatalogState } from "../catalog.js";
 
-const accountLink = document.querySelector("[data-account-link]");
-watchSession(({ phase, user }) => {
-  if (user?.mustChangePassword) {
-    window.location.replace("./account/#password");
-    return;
+const featuredState = document.querySelector("[data-featured-state]");
+const featuredGrid = document.querySelector("[data-featured-products]");
+async function loadFeatured() {
+  setCatalogState(featuredState, "loading", "Đang tải sản phẩm");
+  try {
+    const { items } = await getCatalog("/products", { query: { sort: "newest", page: 1, pageSize: 4 } });
+    renderProducts(featuredGrid, items);
+    if (items.length) setCatalogState(featuredState);
+    else setCatalogState(featuredState, "empty", "Chưa có sản phẩm", "Sản phẩm mới sẽ xuất hiện ở đây khi có.");
+  } catch (error) {
+    setCatalogState(featuredState, "error", "Chưa tải được sản phẩm", catalogError(error), true);
   }
-  accountLink.textContent = phase === "anonymous" ? "Đăng nhập" : "Tài khoản";
-});
-void restoreSession();
+}
+featuredState.querySelector("[data-retry]").addEventListener("click", loadFeatured);
+void loadFeatured();
 
 const guide = document.querySelector("#sport-guide");
 const title = guide.querySelector("[data-guide-title]");

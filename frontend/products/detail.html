@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chi tiết sản phẩm — SportShop</title>
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="stylesheet" href="../css/catalog.css">
+  <script type="module" src="../js/pages/product-detail.js"></script>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header">
+    <div class="frame header-row">
+      <a class="brand" href="../" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
+        <a href="../">Trang chủ</a>
+        <a href="./">Sản phẩm</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-outline account-link" href="../account/" data-account-link>Tài khoản</a>
+        <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="frame catalog-main" tabindex="-1">
+    <a class="text-link catalog-back" href="./">← Tất cả sản phẩm</a>
+    <div class="state-panel catalog-state" data-detail-state data-state="loading">
+      <span class="state-icon" aria-hidden="true"></span>
+      <div aria-live="polite"><strong data-state-title>Đang tải sản phẩm</strong><p data-state-message></p></div>
+      <button class="button button-outline" type="button" data-retry hidden>Thử lại</button>
+    </div>
+    <article class="product-detail" data-detail hidden aria-labelledby="product-name">
+      <div class="gallery">
+        <div data-main-photo></div>
+        <div class="gallery-thumbs" role="group" aria-label="Chọn ảnh sản phẩm" data-gallery-thumbs hidden></div>
+      </div>
+      <div class="detail-info">
+        <p class="catalog-meta" data-product-meta></p>
+        <h1 class="catalog-title" id="product-name" data-product-name></h1>
+        <div class="variant-summary" role="status" aria-atomic="true">
+          <p class="product-price" data-variant-price></p>
+          <p class="stock-label" data-variant-stock></p>
+        </div>
+        <p class="product-description" data-product-description hidden></p>
+        <fieldset class="variant-group">
+          <legend>Màu sắc</legend>
+          <div class="variant-options" data-variant-colors></div>
+        </fieldset>
+        <fieldset class="variant-group">
+          <legend>Kích thước</legend>
+          <div class="variant-options" data-variant-sizes></div>
+        </fieldset>
+        <div class="catalog-buy">
+          <button class="button button-primary" type="button" disabled aria-describedby="cart-note">Thêm vào giỏ</button>
+          <p id="cart-note">Tính năng giỏ hàng chưa khả dụng.</p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="frame footer-row">
+      <a class="brand" href="../">Sport<span>Shop</span></a>
+      <nav aria-label="Điều hướng cuối trang"><a href="../#help">Trợ giúp</a><a href="#main">Về đầu trang ↑</a></nav>
+    </div>
+  </footer>
+</body>
+</html>
