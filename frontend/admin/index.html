@@ -13,16 +13,24 @@
     <aside class="admin-sidebar">
       <a class="brand" href="./" aria-label="SportShop — Quản trị"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
       <nav aria-label="Điều hướng quản trị">
-        <a href="#main" aria-current="page"><span class="dashboard-icon" aria-hidden="true"></span>Tổng quan</a>
+        <a href="#main" aria-current="page" data-admin-only hidden><span class="dashboard-icon" aria-hidden="true"></span>Tổng quan</a>
         <a class="back-store" href="../">← Về cửa hàng</a>
       </nav>
     </aside>
     <main id="main" class="admin-main" tabindex="-1">
-      <header class="admin-heading">
+      <section class="connection-card" data-admin-guard>
+        <h1>Quản trị SportShop</h1>
+        <p data-guard-message role="status">Đang kiểm tra phiên đăng nhập…</p>
+        <a class="button button-primary" href="../account/#login" data-guard-login hidden>Đăng nhập</a>
+      </section>
+      <header class="admin-heading" data-admin-only hidden>
         <div><p class="admin-context">Quản trị SportShop</p><h1>Tổng quan</h1></div>
-        <button class="button button-outline" type="button" data-dialog="connection-help">Trợ giúp</button>
+        <div class="account-actions">
+          <a class="button button-outline" href="../account/#profile">Tài khoản</a>
+          <button class="button button-outline" type="button" data-dialog="connection-help">Trợ giúp</button>
+        </div>
       </header>
-      <section class="connection-card" aria-labelledby="connection-title">
+      <section class="connection-card" aria-labelledby="connection-title" data-admin-only hidden>
         <h2 id="connection-title">Kết nối API</h2>
         <p>Kiểm tra kết nối của giao diện tới Backend Development.</p>
         <form id="connection-form">

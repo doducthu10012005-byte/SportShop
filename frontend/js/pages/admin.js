@@ -1,6 +1,24 @@
 import { ApiError, request } from "../api.js";
 import { API_BASE_URL } from "../config.js";
 import { renderState, showToast } from "../ui.js";
+import { restoreSession, watchSession } from "../auth.js";
+
+const guard = document.querySelector("[data-admin-guard]");
+const signIn = guard.querySelector("[data-guard-login]");
+const adminSections = document.querySelectorAll("[data-admin-only]");
+watchSession(({ phase, user, message }) => {
+  const allowed = user?.role === "Admin" && !user.mustChangePassword;
+  guard.hidden = allowed;
+  for (const section of adminSections) section.hidden = !allowed;
+  if (user?.mustChangePassword) {
+    window.location.replace("../account/#password");
+    return;
+  }
+  signIn.hidden = phase !== "anonymous";
+  guard.querySelector("[data-guard-message]").textContent = user ? "Bạn không có quyền truy cập trang quản trị."
+    : phase === "anonymous" ? message || "Đăng nhập bằng tài khoản Admin để tiếp tục." : "Đang kiểm tra phiên đăng nhập…";
+});
+void restoreSession();
 
 const endpoint = document.querySelector("#api-endpoint");
 const feedback = document.querySelector("#connection-state");

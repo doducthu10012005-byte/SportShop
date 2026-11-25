@@ -13,6 +13,20 @@ python -m http.server 5500 --bind 127.0.0.1 --directory frontend --tls-cert $fro
 
 Mở `https://localhost:5500/` cho cửa hàng hoặc `https://localhost:5500/admin/` cho giao diện quản trị. Dùng tên `localhost` cho cả hai origin. Giữ chứng chỉ và khóa riêng trong thư mục tạm ngoài Git.
 
-API Development được cấu hình trong `js/config.js`, mặc định là `https://localhost:7132/api/v1`. Khi Backend chạy, nút **Kiểm tra kết nối** ở trang quản trị gọi `GET /payment-methods` để kiểm tra phản hồi. Backend Development đã cho phép origin `https://localhost:5500`.
+API Development được cấu hình trong `js/config.js`, mặc định là `https://localhost:7132/api/v1`. Backend Development đã cho phép origin `https://localhost:5500`. Sau khi Admin đăng nhập, nút **Kiểm tra kết nối** ở trang quản trị gọi `GET /payment-methods`.
 
-`js/api.js` cung cấp `request`, `ApiError`, `setAccessToken` và `clearAccessToken`. Truyền đường dẫn tính từ `/api/v1`, ví dụ `request("/payment-methods", { auth: false })`. Phương thức trả JSON envelope và ném `ApiError` khi thất bại. Các trang đăng nhập, khôi phục phiên và đăng xuất sẽ sử dụng lớp này ở giai đoạn tiếp theo.
+## Xác thực
+
+Mở `https://localhost:5500/account/` để đăng nhập hoặc đăng ký Customer. Sau khi đăng nhập, trang tài khoản hiển thị hồ sơ từ Backend và cho phép đổi mật khẩu hoặc đăng xuất. Nếu tài khoản phải đổi mật khẩu, Frontend mở thẳng biểu mẫu đổi mật khẩu. Đăng nhập lại bằng mật khẩu mới sau khi đổi thành công.
+
+`js/auth.js` giữ access token trong bộ nhớ và khôi phục phiên bằng cookie do Backend cấp. Với các yêu cầu cần xác thực, dùng `authorizedRequest` để dùng chung lần refresh khi có nhiều phản hồi 401 và thử lại tối đa một lần. Frontend dùng khóa trình duyệt để đồng bộ refresh và logout giữa các tab khi Web Locks có sẵn. Trình duyệt thiếu Web Locks chỉ đồng bộ các thao tác trong từng tab. Dấu hiệu phiên trong `localStorage` là giá trị ngẫu nhiên, dùng để nhận biết và đồng bộ phiên giữa các tab.
+
+Để thử thủ công, dùng tài khoản Customer và Admin có sẵn trong Backend thử nghiệm riêng. Thử đăng nhập, tải lại trang tài khoản để kiểm tra khôi phục phiên, rồi mở `/admin/` với từng vai trò. Thử đổi mật khẩu bằng tài khoản thử và kiểm tra đăng nhập lại. Sau khi đăng xuất, tải lại trang để xác nhận phiên đã kết thúc.
+
+## Kiểm thử Chromium với API giả lập
+
+Dùng chứng chỉ HTTPS đã xuất ở trên. Bộ kiểm thử cần Chrome hoặc Chromium và Python 3.14. Hai máy chủ HTTPS dùng cổng ngẫu nhiên trên localhost và dữ liệu giả lập.
+
+~~~powershell
+python frontend/tests/auth_browser.py --cert $frontendCert --key $frontendKey
+~~~

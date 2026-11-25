@@ -1,4 +1,15 @@
 import "../ui.js";
+import { restoreSession, watchSession } from "../auth.js";
+
+const accountLink = document.querySelector("[data-account-link]");
+watchSession(({ phase, user }) => {
+  if (user?.mustChangePassword) {
+    window.location.replace("./account/#password");
+    return;
+  }
+  accountLink.textContent = phase === "anonymous" ? "Đăng nhập" : "Tài khoản";
+});
+void restoreSession();
 
 const guide = document.querySelector("#sport-guide");
 const title = guide.querySelector("[data-guide-title]");
