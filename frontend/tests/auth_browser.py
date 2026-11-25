@@ -45,7 +45,11 @@ def run(args, temp_path):
     fixture = Fixture()
     cart = None
     test_module = "auth_browser.js"
-    if args.cart:
+    if args.checkout:
+        from checkout_fixture import CheckoutFixture
+        cart = CheckoutFixture()
+        test_module = "checkout_browser.js"
+    elif args.cart:
         from cart_fixture import CartFixture
         cart = CartFixture()
         test_module = "cart_browser.js"
@@ -101,6 +105,8 @@ def run(args, temp_path):
             bearer = self.headers.get("Authorization")
             with fixture.mutex:
                 fixture.calls[path] = fixture.calls.get(path, 0) + 1
+            if args.checkout and path in ("orders", "payment-methods", "users/me/addresses"):
+                return cart.checkout(self, path, body, bearer in fixture.tokens, fixture.user, parse_qs(urlsplit(self.path).query))
             if cart and (path == "cart" or path.startswith(("cart/", "products/"))):
                 return cart.dispatch(self, path, body, bearer in fixture.tokens, fixture.user)
 
@@ -261,7 +267,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cert", required=True)
     parser.add_argument("--key", required=True)
-    parser.add_argument("--cart", action="store_true", help="Run the Customer cart scenarios with the Auth fixture.")
+    suite = parser.add_mutually_exclusive_group()
+    suite.add_argument("--cart", action="store_true", help="Run the Customer cart scenarios with the Auth fixture.")
+    suite.add_argument("--checkout", action="store_true", help="Run the Checkout scenarios with the Auth and Cart fixtures.")
     parser.add_argument("--chrome", default=os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome",
                                                        "Application", "chrome.exe"))
     with tempfile.TemporaryDirectory(prefix="SportShop-AuthChromium-", ignore_cleanup_errors=True) as profile:

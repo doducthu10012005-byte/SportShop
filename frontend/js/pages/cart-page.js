@@ -129,6 +129,10 @@ watchCart(snapshot => {
   retry.disabled = busy;
   login.hidden = access !== "guest";
   layout.hidden = !data?.items.length;
+  const canCheckout = access === "customer" && !busy && !error && data?.items.length > 0 &&
+    data.items.every(item => item.isAvailable === true);
+  layout.querySelector("[data-checkout-link]").hidden = !canCheckout;
+  layout.querySelector("[data-checkout-blocked]").hidden = !data?.items.some(item => item.isAvailable !== true);
   layout.setAttribute("aria-busy", String(busy));
   syncControls(busy);
   if (access !== "customer" && dialog.open) dialog.close("keep");

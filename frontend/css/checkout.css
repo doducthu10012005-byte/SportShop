@@ -1,0 +1,28 @@
+.checkout-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(17rem, .65fr); gap: 1.15rem; align-items: start; }
+.checkout-state, .checkout-layout, .checkout-result { margin-top: 1.1rem; }
+.checkout-card { padding: clamp(.9rem, 2.2vw, 1.4rem); border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); min-width: 0; overflow-wrap: anywhere; }
+.checkout-fields { display: grid; gap: 1rem; }
+.checkout-card h2 { font-size: 1.2rem; }
+.checkout-card label { margin-top: .75rem; }
+.checkout-input { width: 100%; min-height: 44px; padding: .45rem .65rem; margin-top: .25rem; border: 1px solid #c9bfd6; border-radius: .55rem; background: var(--paper); color: var(--ink); font: inherit; }
+textarea.checkout-input { display: block; resize: vertical; }
+.checkout-input[aria-invalid="true"] { border-color: #a52948; }
+.checkout-field-error, [data-checkout-stock] { margin-top: .3rem; color: #892642; font-size: .86rem; }
+.checkout-issues { margin: .4rem 0 0; padding-left: 1.15rem; font-size: .9rem; }
+.checkout-muted, .saved-addresses p, .checkout-lines p { color: var(--muted); font-size: .87rem; }
+.saved-addresses p:empty, .bank-instructions p:empty { display: none; }
+.saved-addresses button { margin-top: .3rem; }
+.checkout-lines { list-style: none; padding: 0; margin: .5rem 0; }
+.checkout-lines li { display: grid; grid-template-columns: 3rem minmax(0, 1fr); align-items: start; gap: .65rem; padding-block: .65rem; border-bottom: 1px solid var(--line); }
+.checkout-lines .product-photo { border-radius: .4rem; }
+.checkout-lines .photo-placeholder { padding: 0; font-size: .62rem; }
+.checkout-totals { margin-block: .9rem; }
+.checkout-totals div { display: flex; flex-wrap: wrap; gap: .25rem .65rem; justify-content: space-between; margin-block: .4rem; }
+.checkout-totals dd { margin: 0; font-weight: 720; }
+.checkout-submit { width: 100%; margin: .65rem 0 .4rem; }
+.checkout-submit:disabled { cursor: default; }
+.checkout-result { max-width: 45rem; }
+.bank-instructions { margin-block: .8rem 1.15rem; padding: .85rem; border-radius: .65rem; background: var(--ground); }
+.bank-instructions h3 { margin: 0 0 .5rem; }
+.bank-instructions p { margin-top: .45rem; white-space: pre-wrap; }
+@media (max-width: 700px) { .checkout-layout { grid-template-columns: minmax(0, 1fr); } }

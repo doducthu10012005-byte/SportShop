@@ -33,7 +33,7 @@ export function clearAccessToken() {
   accessToken = null;
 }
 
-export async function request(path, { method = "GET", body, query, auth = true, signal } = {}) {
+export async function request(path, { method = "GET", body, query, auth = true, signal, expectedStatus } = {}) {
   const base = new URL(API_BASE_URL.replace(/\/+$/, "") + "/", window.location.href);
   const url = new URL(path.replace(/^\/+/, ""), base);
   if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) {
@@ -93,7 +93,8 @@ export async function request(path, { method = "GET", body, query, auth = true, 
       traceId: typeof document?.traceId === "string" ? document.traceId : null
     });
   }
-  if (document?.success !== true || !Object.hasOwn(document, "data")) {
+  if ((expectedStatus !== undefined && response.status !== expectedStatus) ||
+      document?.success !== true || !Object.hasOwn(document, "data")) {
     throw new ApiError("Phản hồi từ hệ thống không hợp lệ.", { status: response.status, code: "INVALID_RESPONSE" });
   }
   return document;

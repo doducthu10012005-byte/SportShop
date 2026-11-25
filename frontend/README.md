@@ -33,6 +33,12 @@ Các trang dùng API Public Catalog trên Backend đang cấu hình. Ảnh sản
 
 Đăng nhập bằng tài khoản Customer trong môi trường thử, mở chi tiết sản phẩm còn hàng, chọn biến thể và số lượng rồi bấm **Thêm vào giỏ**. Mở `https://localhost:5500/cart/` hoặc bấm biểu tượng giỏ để xem giá hiện tại, sửa số lượng, xóa từng dòng hoặc xóa toàn bộ sau khi xác nhận. Số lượng trên biểu tượng và tạm tính lấy từ phản hồi của Backend. Giỏ hàng không giữ tồn kho.
 
+## Đặt hàng
+
+Từ giỏ hàng có đủ hàng, chọn **Tiến hành đặt hàng** hoặc mở `https://localhost:5500/checkout/`. Nhập thông tin nhận hàng hoặc chọn một địa chỉ đã lưu và kiểm tra lại trước khi chọn phương thức thanh toán. Backend chốt phí giao hàng và tổng tiền khi tạo đơn. Với chuyển khoản, chỉ dùng hướng dẫn hiển thị trong kết quả đơn hàng đã xác nhận.
+
+Nếu mất kết nối khi gửi đơn, hãy xác minh kết quả trước khi tự đặt lại. Giao diện không tự gửi lại yêu cầu tạo đơn sau lỗi mạng. Chạy bộ kiểm thử Checkout giả lập để trải nghiệm luồng COD và chuyển khoản bằng dữ liệu thử.
+
 ## Kiểm thử Chromium với API giả lập
 
 Dùng chứng chỉ HTTPS đã xuất ở trên. Bộ kiểm thử cần Chrome hoặc Chromium và Python 3.14. Hai máy chủ HTTPS dùng cổng ngẫu nhiên trên localhost và dữ liệu giả lập.
@@ -41,4 +47,5 @@ Dùng chứng chỉ HTTPS đã xuất ở trên. Bộ kiểm thử cần Chrome 
 python frontend/tests/auth_browser.py --cert $frontendCert --key $frontendKey
 python frontend/tests/catalog_browser.py --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --cart --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --checkout --cert $frontendCert --key $frontendKey
 ~~~

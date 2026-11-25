@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đặt hàng — SportShop</title>
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="stylesheet" href="../css/catalog.css">
+  <link rel="stylesheet" href="../css/checkout.css">
+  <script type="module" src="../js/pages/checkout.js"></script>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header">
+    <div class="frame header-row">
+      <a class="brand" href="../" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
+        <a href="../products/">Sản phẩm</a>
+        <a href="../cart/">Giỏ hàng</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-outline account-link" href="../account/" data-account-link>Tài khoản</a>
+        <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </header>
+  <main id="main" class="frame catalog-main" tabindex="-1">
+    <a class="text-link catalog-back" href="../cart/">← Về giỏ hàng</a>
+    <h1 class="catalog-title">Đặt hàng</h1>
+    <div class="state-panel catalog-state checkout-state" data-checkout-state data-state="loading">
+      <span class="state-icon" aria-hidden="true"></span>
+      <div aria-live="polite">
+        <strong data-state-title tabindex="-1">Đang tải thông tin đặt hàng</strong>
+        <p data-state-message></p>
+        <ul class="checkout-issues" data-checkout-issues hidden></ul>
+      </div>
+      <a class="button button-primary" href="../account/#login" data-checkout-login hidden>Đăng nhập</a>
+      <button class="button button-outline" type="button" data-retry hidden>Tải lại thông tin</button>
+    </div>
+
+    <form class="checkout-layout" method="post" novalidate data-checkout-form hidden>
+      <div class="checkout-fields">
+        <section class="checkout-card" aria-labelledby="recipient-title">
+          <h2 id="recipient-title">Thông tin nhận hàng</h2>
+          <div class="saved-addresses">
+            <label class="catalog-field" data-address-select hidden>Địa chỉ đã lưu
+              <select name="savedAddress"><option value="">Nhập địa chỉ khác</option></select>
+            </label>
+            <p data-address-status role="status"></p>
+            <button class="text-button text-link" type="button" data-more-addresses hidden>Xem thêm địa chỉ</button>
+          </div>
+          <label class="catalog-field" for="checkout-name">Họ tên người nhận</label>
+          <input class="checkout-input" id="checkout-name" name="recipientName" autocomplete="shipping name" maxlength="100" required aria-describedby="name-error">
+          <p class="checkout-field-error" id="name-error" data-field-error="recipientName" hidden></p>
+          <label class="catalog-field" for="checkout-phone">Số điện thoại</label>
+          <input class="checkout-input" id="checkout-phone" name="recipientPhone" autocomplete="shipping tel" type="tel" maxlength="20" required aria-describedby="phone-error">
+          <p class="checkout-field-error" id="phone-error" data-field-error="recipientPhone" hidden></p>
+          <label class="catalog-field" for="checkout-address">Địa chỉ giao hàng</label>
+          <textarea class="checkout-input" id="checkout-address" name="shippingAddress" rows="3" autocomplete="shipping street-address" maxlength="500" required aria-describedby="address-error"></textarea>
+          <p class="checkout-field-error" id="address-error" data-field-error="shippingAddress" hidden></p>
+          <label class="catalog-field" for="checkout-note">Ghi chú (không bắt buộc)</label>
+          <textarea class="checkout-input" id="checkout-note" name="note" rows="2" maxlength="500" aria-describedby="note-error"></textarea>
+          <p class="checkout-field-error" id="note-error" data-field-error="note" hidden></p>
+        </section>
+        <section class="checkout-card" aria-labelledby="payment-title">
+          <h2 id="payment-title">Phương thức thanh toán</h2>
+          <label class="catalog-field" for="checkout-method">Chọn phương thức</label>
+          <select class="checkout-input" id="checkout-method" name="paymentMethodId" required aria-describedby="payment-error"></select>
+          <p class="checkout-field-error" id="payment-error" data-field-error="paymentMethodId" hidden></p>
+        </section>
+      </div>
+      <section class="checkout-card order-summary" aria-labelledby="summary-title">
+        <h2 id="summary-title">Tóm tắt đơn hàng</h2>
+        <ul class="checkout-lines" data-checkout-lines></ul>
+        <dl class="checkout-totals">
+          <div><dt>Tạm tính</dt><dd data-preview-subtotal></dd></div>
+          <div><dt>Phí vận chuyển</dt><dd>Chốt khi đặt hàng</dd></div>
+          <div><dt>Tổng thanh toán</dt><dd>Chốt khi đặt hàng</dd></div>
+        </dl>
+        <p data-checkout-stock hidden>Hãy sửa hoặc xóa các dòng không khả dụng trong giỏ trước khi đặt hàng.</p>
+        <button class="button button-primary checkout-submit" type="submit" disabled>Đặt hàng</button>
+        <p class="checkout-muted">Giá và tồn kho được kiểm tra lại khi đặt hàng.</p>
+      </section>
+    </form>
+
+    <section class="checkout-card checkout-result" data-checkout-result aria-labelledby="order-success" hidden>
+      <h2 id="order-success" tabindex="-1">Đã tạo đơn hàng</h2>
+      <dl class="checkout-totals">
+        <div><dt>Mã đơn</dt><dd data-order-code></dd></div>
+        <div><dt>Trạng thái đơn</dt><dd data-order-status></dd></div>
+        <div><dt>Tiền hàng</dt><dd data-order-subtotal></dd></div>
+        <div><dt>Phí vận chuyển</dt><dd data-order-shipping></dd></div>
+        <div><dt>Tổng thanh toán</dt><dd data-order-total></dd></div>
+        <div><dt>Thanh toán</dt><dd data-order-payment></dd></div>
+      </dl>
+      <div class="bank-instructions" data-bank-instructions hidden>
+        <h3>Hướng dẫn chuyển khoản</h3>
+        <p data-bank-text></p>
+        <p data-bank-deadline hidden>Hạn thanh toán <time></time> (giờ Việt Nam)</p>
+        <p class="checkout-muted" data-bank-remaining></p>
+      </div>
+      <a class="button button-outline" href="../products/">Tiếp tục mua sắm</a>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="frame footer-row">
+      <a class="brand" href="../">Sport<span>Shop</span></a>
+      <nav aria-label="Điều hướng cuối trang"><a href="../#help">Trợ giúp</a><a href="#main">Về đầu trang ↑</a></nav>
+    </div>
+  </footer>
+</body>
+</html>
