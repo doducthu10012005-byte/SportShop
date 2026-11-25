@@ -25,9 +25,13 @@ Mở `https://localhost:5500/account/` để đăng nhập hoặc đăng ký Cus
 
 ## Danh mục sản phẩm
 
-Mở `https://localhost:5500/` để xem tối đa bốn sản phẩm mới nhất hoặc vào `https://localhost:5500/products/` để tìm kiếm và lọc. Chọn một thẻ để xem chi tiết, ảnh, màu, kích thước, giá và tồn kho của từng biến thể. Nút thêm vào giỏ hiển thị trạng thái chưa khả dụng.
+Mở `https://localhost:5500/` để xem tối đa bốn sản phẩm mới nhất hoặc vào `https://localhost:5500/products/` để tìm kiếm và lọc. Chọn một thẻ để xem chi tiết, ảnh, màu, kích thước, giá và tồn kho của từng biến thể.
 
 Các trang dùng API Public Catalog trên Backend đang cấu hình. Ảnh sản phẩm được tải từ origin của Backend. Để duyệt dữ liệu giả mà không cần Backend hoặc SQL Server, chạy bộ kiểm thử Catalog bên dưới.
+
+## Giỏ hàng
+
+Đăng nhập bằng tài khoản Customer trong môi trường thử, mở chi tiết sản phẩm còn hàng, chọn biến thể và số lượng rồi bấm **Thêm vào giỏ**. Mở `https://localhost:5500/cart/` hoặc bấm biểu tượng giỏ để xem giá hiện tại, sửa số lượng, xóa từng dòng hoặc xóa toàn bộ sau khi xác nhận. Số lượng trên biểu tượng và tạm tính lấy từ phản hồi của Backend. Giỏ hàng không giữ tồn kho.
 
 ## Kiểm thử Chromium với API giả lập
 
@@ -36,4 +40,5 @@ Dùng chứng chỉ HTTPS đã xuất ở trên. Bộ kiểm thử cần Chrome 
 ~~~powershell
 python frontend/tests/auth_browser.py --cert $frontendCert --key $frontendKey
 python frontend/tests/catalog_browser.py --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --cart --cert $frontendCert --key $frontendKey
 ~~~

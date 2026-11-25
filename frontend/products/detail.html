@@ -20,6 +20,7 @@
       <div class="header-actions">
         <a class="button button-outline account-link" href="../account/" data-account-link>Tài khoản</a>
         <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+        <a class="icon-button bag-button" href="../cart/" aria-label="Giỏ hàng"><span class="bag-icon" aria-hidden="true"></span><span class="cart-count" data-cart-count aria-hidden="true" hidden></span></a>
       </div>
     </div>
   </header>
@@ -52,10 +53,19 @@
           <legend>Kích thước</legend>
           <div class="variant-options" data-variant-sizes></div>
         </fieldset>
-        <div class="catalog-buy">
-          <button class="button button-primary" type="button" disabled aria-describedby="cart-note">Thêm vào giỏ</button>
-          <p id="cart-note">Tính năng giỏ hàng chưa khả dụng.</p>
-        </div>
+        <form class="catalog-buy" data-add-form>
+          <label class="catalog-field" data-add-quantity>Số lượng
+            <input name="quantity" type="number" min="1" max="99" step="1" value="1" required inputmode="numeric" disabled>
+          </label>
+          <div class="account-actions">
+            <button class="button button-primary" type="submit" disabled aria-describedby="cart-note">Thêm vào giỏ</button>
+            <a class="button button-outline" href="../account/#login" data-add-login hidden>Đăng nhập</a>
+            <a class="button button-outline" href="../cart/" data-view-cart hidden>Xem giỏ hàng</a>
+          </div>
+          <p id="cart-note" data-add-note>Đang kiểm tra phiên đăng nhập…</p>
+          <p class="form-error" data-add-error role="alert" hidden></p>
+          <p data-add-success role="status"></p>
+        </form>
       </div>
     </article>
   </main>

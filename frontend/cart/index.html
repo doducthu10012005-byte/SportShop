@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giỏ hàng — SportShop</title>
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="stylesheet" href="../css/catalog.css">
+  <link rel="stylesheet" href="../css/cart.css">
+  <script type="module" src="../js/pages/cart-page.js"></script>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header">
+    <div class="frame header-row">
+      <a class="brand" href="../" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
+        <a href="../">Trang chủ</a>
+        <a href="../products/">Sản phẩm</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-outline account-link" href="../account/" data-account-link>Tài khoản</a>
+        <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+        <a class="icon-button bag-button" href="./" aria-current="page" aria-label="Giỏ hàng"><span class="bag-icon" aria-hidden="true"></span><span class="cart-count" data-cart-count aria-hidden="true" hidden></span></a>
+      </div>
+    </div>
+  </header>
+  <main id="main" class="frame catalog-main" tabindex="-1">
+    <a class="text-link catalog-back" href="../products/">← Tiếp tục mua sắm</a>
+    <h1 class="catalog-title" tabindex="-1">Giỏ hàng</h1>
+    <div class="state-panel catalog-state cart-state" data-cart-state data-state="loading">
+      <span class="state-icon" aria-hidden="true"></span>
+      <div aria-live="polite"><strong data-state-title>Đang tải giỏ hàng</strong><p data-state-message></p></div>
+      <a class="button button-primary" href="../account/#login" data-cart-login hidden>Đăng nhập</a>
+      <button class="button button-outline" type="button" data-retry hidden>Tải lại</button>
+    </div>
+    <p class="visually-hidden" data-cart-notice role="status"></p>
+    <div class="cart-layout" data-cart-content hidden>
+      <section class="cart-items" aria-labelledby="cart-items-title">
+        <div class="cart-items-heading">
+          <h2 id="cart-items-title">Sản phẩm trong giỏ</h2>
+          <button class="text-button text-link" type="button" data-dialog="clear-cart" data-clear-cart>Xóa toàn bộ</button>
+        </div>
+        <ul data-cart-items></ul>
+      </section>
+      <section class="cart-summary" aria-labelledby="cart-summary-title">
+        <h2 id="cart-summary-title">Tạm tính</h2>
+        <dl>
+          <div><dt>Số lượng khả dụng</dt><dd data-cart-total-items></dd></div>
+          <div><dt>Tiền hàng</dt><dd data-cart-subtotal></dd></div>
+        </dl>
+        <p data-unavailable-note hidden>Các dòng không khả dụng không được tính vào tạm tính.</p>
+        <p>Giỏ hàng không giữ tồn kho. Giá và tồn kho có thể thay đổi.</p>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="frame footer-row">
+      <a class="brand" href="../">Sport<span>Shop</span></a>
+      <nav aria-label="Điều hướng cuối trang"><a href="../#help">Trợ giúp</a><a href="#main">Về đầu trang ↑</a></nav>
+    </div>
+  </footer>
+  <dialog class="dialog" id="clear-cart" aria-labelledby="clear-cart-title">
+    <h2 id="clear-cart-title">Xóa toàn bộ giỏ hàng?</h2>
+    <p>Tất cả sản phẩm trong giỏ sẽ bị xóa.</p>
+    <form class="account-actions cart-dialog-actions" method="dialog">
+      <button class="button button-outline" value="keep" autofocus>Giữ giỏ hàng</button>
+      <button class="button button-primary" value="clear">Xóa toàn bộ</button>
+    </form>
+  </dialog>
+</body>
+</html>

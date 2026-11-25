@@ -1,5 +1,6 @@
 import "../ui.js";
 import "../store-session.js";
+import "../cart-badge.js";
 import { catalogError, getCatalog, renderProducts, setCatalogState } from "../catalog.js";
 
 const featuredState = document.querySelector("[data-featured-state]");

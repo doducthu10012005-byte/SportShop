@@ -121,7 +121,23 @@
 .variant-out { color: var(--muted); background: var(--ground); }
 .catalog-buy { margin-top: 1.25rem; }
 .catalog-buy .button:disabled { cursor: default; }
+.catalog-buy .catalog-field { max-width: 7rem; margin-bottom: .65rem; }
 .catalog-buy p { color: var(--muted); font-size: .85rem; margin-top: .45rem; }
+.catalog-buy p:empty { display: none; }
+.catalog-buy .form-error { color: #892642; }
+.cart-count {
+  position: absolute;
+  min-width: 1.15rem;
+  padding: .03rem .2rem;
+  inset: -.3rem -.3rem auto auto;
+  border-radius: 99px;
+  background: var(--violet-dark);
+  color: white;
+  font-size: .7rem;
+  font-weight: 750;
+  text-align: center;
+}
+.bag-button { position: relative; }
 
 @media (max-width: 920px) {
   .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

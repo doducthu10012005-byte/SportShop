@@ -1,4 +1,5 @@
 import "../store-session.js";
+import "../cart-badge.js";
 import { catalogError, element, getCatalog, positiveInt, renderProducts, setCatalogState } from "../catalog.js";
 
 const form = document.querySelector("#catalog-filters");

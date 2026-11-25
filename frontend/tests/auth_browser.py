@@ -43,6 +43,12 @@ class Fixture:
 
 def run(args, temp_path):
     fixture = Fixture()
+    cart = None
+    test_module = "auth_browser.js"
+    if args.cart:
+        from cart_fixture import CartFixture
+        cart = CartFixture()
+        test_module = "cart_browser.js"
     tls = {"certfile": args.cert, "keyfile": args.key}
     completed = threading.Event()
     report = None
@@ -55,7 +61,7 @@ def run(args, temp_path):
             if self.headers.get("Origin") == front_origin:
                 self.send_header("Access-Control-Allow-Origin", front_origin)
                 self.send_header("Access-Control-Allow-Credentials", "true")
-                self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "accept, authorization, content-type, x-requested-with")
                 self.send_header("Vary", "Origin")
             super().end_headers()
@@ -71,8 +77,11 @@ def run(args, temp_path):
             self.send_header("Content-Length", str(len(body)))
             if cookie:
                 self.send_header("Set-Cookie", cookie)
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.end_headers()
+                self.wfile.write(body)
+            except ConnectionError:
+                pass
 
         def success(self, data=None, cookie=None, status=200):
             self.reply(status, {"success": True, "message": "OK", "data": data}, cookie)
@@ -92,6 +101,8 @@ def run(args, temp_path):
             bearer = self.headers.get("Authorization")
             with fixture.mutex:
                 fixture.calls[path] = fixture.calls.get(path, 0) + 1
+            if cart and (path == "cart" or path.startswith(("cart/", "products/"))):
+                return cart.dispatch(self, path, body, bearer in fixture.tokens, fixture.user)
 
             if path in ("auth/refresh", "auth/logout"):
                 if self.headers.get("Origin") != front_origin or self.headers.get("X-Requested-With") != "XMLHttpRequest":
@@ -151,7 +162,7 @@ def run(args, temp_path):
             fixture.tokens.clear()
             return self.success()
 
-        do_GET = do_POST = do_PUT = dispatch
+        do_GET = do_POST = do_PUT = do_DELETE = dispatch
 
     class Front(SimpleHTTPRequestHandler):
         def __init__(self, *values, **options):
@@ -174,7 +185,7 @@ def run(args, temp_path):
                 return self.send_text(f'export const API_BASE_URL = "{api_origin}/api/v1";', "text/javascript")
             if parsed.path == "/__auth_qa":
                 return self.send_text('<!doctype html><meta charset="utf-8"><pre id="qa">RUNNING</pre>'
-                                      '<script type="module" src="/tests/auth_browser.js"></script>', "text/html")
+                                      f'<script type="module" src="/tests/{test_module}"></script>', "text/html")
             if parsed.path == "/api/v1/auth/__inspect":
                 return self.send_text('<!doctype html><meta charset="utf-8"><title>Cookie QA</title>', "text/html")
             if parsed.path == "/__fixture":
@@ -194,8 +205,13 @@ def run(args, temp_path):
                         fixture.profile_error = (401, "TOKEN_REVOKED", "Phiên đã bị thu hồi.")
                     elif action == "normal":
                         fixture.profile_error = None
+                    elif action == "revoke-session":
+                        fixture.cookie = None
+                        fixture.tokens.clear()
                     result = {"calls": fixture.calls, "hasCookie": fixture.cookie is not None,
                               "concurrent": fixture.concurrent, "maxConcurrent": fixture.max_concurrent}
+                    if cart:
+                        result.update(cart.control(action))
                     return self.send_text(json.dumps(result), "application/json")
             return super().do_GET()
 
@@ -235,7 +251,7 @@ def run(args, temp_path):
                 server.shutdown()
             for thread in threads:
                 thread.join()
-        print(report or "FAIL: no Auth QA report")
+        print(report or "FAIL: no Chromium report")
         if not report or not report.startswith("PASS "):
             print("Auth request counts:", fixture.calls)
         return 0 if report and report.startswith("PASS ") else 1
@@ -245,6 +261,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cert", required=True)
     parser.add_argument("--key", required=True)
+    parser.add_argument("--cart", action="store_true", help="Run the Customer cart scenarios with the Auth fixture.")
     parser.add_argument("--chrome", default=os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome",
                                                        "Application", "chrome.exe"))
     with tempfile.TemporaryDirectory(prefix="SportShop-AuthChromium-", ignore_cleanup_errors=True) as profile:
