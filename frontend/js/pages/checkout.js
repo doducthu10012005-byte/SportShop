@@ -1,5 +1,6 @@
 import "../store-session.js";
 import { authorizedRequest, sessionMessage, watchSession } from "../auth.js";
+import { orderDetailUrl, paymentStatus } from "../orders.js";
 import { cartMessage, loadCart, watchCart } from "../cart.js";
 import { element, getCatalog, money, positiveInt, productImage, setCatalogState } from "../catalog.js";
 
@@ -188,14 +189,15 @@ function validReceipt(data, method) {
 function showReceipt(data) {
   const payment = data.payment;
   const bank = payment.methodCode === "BANK_TRANSFER";
-  const labels = { Pending: "Chờ thanh toán", Paid: "Đã thanh toán", Failed: "Thanh toán thất bại",
-    Expired: "Quá hạn thanh toán", RefundPending: "Chờ hoàn tiền", Refunded: "Đã hoàn tiền" };
   const values = { code: data.orderCode, status: data.status.statusName, subtotal: money(data.subtotal),
     shipping: money(data.shippingFee), total: money(data.totalAmount),
-    payment: (bank ? "Chuyển khoản" : "Thanh toán khi nhận hàng") + " · " + (labels[payment.paymentStatus] ?? payment.paymentStatus) };
+    payment: (bank ? "Chuyển khoản" : "Thanh toán khi nhận hàng") + " · " + paymentStatus(payment.paymentStatus) };
   for (const [field, value] of Object.entries(values)) result.querySelector(`[data-order-${field}]`).textContent = value;
   result.querySelector("[data-bank-instructions]").hidden = !bank;
   result.querySelector("[data-bank-text]").textContent = bank ? payment.instructions : "";
+  const link = result.querySelector("[data-order-detail-link]");
+  link.href = orderDetailUrl(data.orderId);
+  link.hidden = false;
 
   const deadline = result.querySelector("[data-bank-deadline]");
   const remaining = result.querySelector("[data-bank-remaining]");
@@ -219,6 +221,9 @@ function showReceipt(data) {
 
 function reset(owner) {
   clearInterval(expiryTimer);
+  const link = result.querySelector("[data-order-detail-link]");
+  link.removeAttribute("href");
+  link.hidden = true;
   result.querySelectorAll("dd, [data-bank-text], [data-bank-remaining], time").forEach(node => { node.textContent = ""; });
   form.reset();
   form.elements.recipientName.value = owner ? session.user.fullName || "" : "";

@@ -26,6 +26,7 @@ function render() {
   document.querySelector("[data-forced-note]").hidden = !forced;
   document.querySelector("[data-password-title]").textContent = forced ? "Đổi mật khẩu bắt buộc" : "Đổi mật khẩu";
   document.querySelector("[data-admin-link]").hidden = busy || forced || user?.role !== "Admin";
+  document.querySelector("[data-customer-orders]").hidden = busy || forced || user?.role !== "Customer";
 
   for (const [name, section] of views) section.hidden = busy || name !== page;
   if (user) {

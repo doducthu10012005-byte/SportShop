@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đơn hàng của tôi — SportShop</title>
+  <link rel="stylesheet" href="../css/site.css">
+  <link rel="stylesheet" href="../css/catalog.css">
+  <link rel="stylesheet" href="../css/orders.css">
+  <script type="module" src="../js/pages/orders.js"></script>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <header class="site-header">
+    <div class="frame header-row">
+      <a class="brand" href="../" aria-label="SportShop — Trang chủ"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+      <nav class="store-nav" id="store-nav" aria-label="Điều hướng cửa hàng">
+        <a href="../products/">Sản phẩm</a><a href="../cart/">Giỏ hàng</a><a href="./" aria-current="page">Đơn hàng</a>
+      </nav>
+      <div class="header-actions">
+        <a class="button button-outline account-link" href="../account/" data-account-link>Tài khoản</a>
+        <button class="icon-button menu-toggle" type="button" data-nav-toggle aria-controls="store-nav" aria-expanded="false" aria-label="Điều hướng"><span class="menu-icon" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </header>
+  <main id="main" class="frame catalog-main" tabindex="-1">
+    <a class="text-link catalog-back" href="./" data-order-back hidden>← Đơn hàng của tôi</a>
+    <h1 class="catalog-title" tabindex="-1" data-orders-title>Đơn hàng của tôi</h1>
+    <form class="order-filters order-panel" method="get" data-orders-filter hidden>
+      <label class="catalog-field">Trạng thái
+        <select name="statusCode">
+          <option value="">Tất cả trạng thái</option><option value="PENDING">Chờ xác nhận</option>
+          <option value="CONFIRMED">Đã xác nhận</option><option value="SHIPPING">Đang giao hàng</option>
+          <option value="DELIVERED">Đã giao</option><option value="CANCELLED">Đã hủy</option>
+        </select>
+      </label>
+      <label class="catalog-field">Sắp xếp
+        <select name="sort"><option value="-createdAt">Mới nhất</option><option value="createdAt">Cũ nhất</option></select>
+      </label>
+      <button type="submit" class="button button-primary">Áp dụng</button>
+    </form>
+    <div class="state-panel catalog-state order-state" data-orders-state data-state="loading">
+      <span class="state-icon" aria-hidden="true"></span>
+      <div aria-live="polite"><strong data-state-title>Đang kiểm tra phiên đăng nhập</strong><p data-state-message></p></div>
+      <a class="button button-primary" href="../account/#login" data-orders-login hidden>Đăng nhập</a>
+      <button class="button button-outline" type="button" data-retry hidden>Tải lại</button>
+    </div>
+    <p class="order-notice" data-order-notice role="status" tabindex="-1" hidden></p>
+    <section aria-label="Lịch sử đơn hàng" data-orders-list hidden>
+      <ul class="order-list"></ul>
+      <nav class="catalog-pagination" aria-label="Phân trang đơn hàng" hidden>
+        <a class="button button-outline" data-prev>Trang trước</a>
+        <span data-page-label></span>
+        <a class="button button-outline" data-next>Trang sau</a>
+      </nav>
+    </section>
+    <article class="order-detail" aria-label="Chi tiết đơn hàng" data-order-detail hidden>
+      <section class="order-panel">
+        <div class="order-heading">
+          <div><h2>Thông tin đơn</h2><p data-order-overview></p></div>
+          <div class="account-actions">
+            <button type="button" class="button button-outline" data-refresh-order>Cập nhật trạng thái</button>
+            <button type="button" class="button button-outline order-cancel" data-open-cancel hidden>Hủy đơn</button>
+          </div>
+        </div>
+        <h3>Thông tin nhận hàng</h3>
+        <dl class="order-facts" data-order-recipient></dl>
+        <h3>Sản phẩm lúc đặt</h3>
+        <ul class="order-lines" data-order-lines></ul>
+        <dl class="order-facts order-money" data-order-amounts></dl>
+      </section>
+      <div class="order-side">
+        <section class="order-panel">
+          <h2>Thanh toán</h2>
+          <dl class="order-facts" data-order-payment></dl>
+          <p class="order-notice" data-overdue hidden>Đã quá hạn thanh toán, đang chờ hệ thống xử lý.</p>
+          <p class="order-text" data-bank-instructions hidden></p>
+        </section>
+        <section class="order-panel">
+          <h2>Lịch sử trạng thái</h2>
+          <ol class="order-timeline" data-order-history></ol>
+        </section>
+      </div>
+    </article>
+  </main>
+  <footer class="site-footer"><div class="frame footer-row">
+    <a class="brand" href="../">Sport<span>Shop</span></a>
+    <nav aria-label="Điều hướng cuối trang"><a href="../#help">Trợ giúp</a><a href="#main">Về đầu trang ↑</a></nav>
+  </div></footer>
+  <dialog class="dialog" aria-labelledby="cancel-title" data-cancel-dialog>
+    <h2 id="cancel-title">Hủy đơn hàng?</h2>
+    <form method="post" novalidate data-cancel-form>
+      <label class="catalog-field">Lý do hủy
+        <textarea name="cancelReason" rows="3" maxlength="255" required aria-describedby="cancel-hint cancel-error" autofocus></textarea>
+      </label>
+      <p id="cancel-hint">Nhập từ 5 đến 255 ký tự.</p>
+      <p id="cancel-error" role="alert" hidden></p>
+      <div class="account-actions order-dialog-actions">
+        <button type="button" class="button button-outline" data-keep-order>Giữ đơn hàng</button>
+        <button type="submit" class="button order-danger">Xác nhận hủy</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

@@ -39,6 +39,10 @@ Từ giỏ hàng có đủ hàng, chọn **Tiến hành đặt hàng** hoặc m�
 
 Nếu mất kết nối khi gửi đơn, hãy xác minh kết quả trước khi tự đặt lại. Giao diện không tự gửi lại yêu cầu tạo đơn sau lỗi mạng. Chạy bộ kiểm thử Checkout giả lập để trải nghiệm luồng COD và chuyển khoản bằng dữ liệu thử.
 
+## Đơn hàng của tôi
+
+Đăng nhập bằng tài khoản Customer, rồi chọn **Đơn hàng của tôi** trong trang tài khoản hoặc mở `https://localhost:5500/orders/`. Sau khi đặt hàng thành công, có thể mở chi tiết ngay từ kết quả Checkout. Trang chi tiết hiển thị thông tin đã lưu khi đặt hàng và cho phép gửi lý do hủy nếu đơn đang chờ xác nhận.
+
 ## Kiểm thử Chromium với API giả lập
 
 Dùng chứng chỉ HTTPS đã xuất ở trên. Bộ kiểm thử cần Chrome hoặc Chromium và Python 3.14. Hai máy chủ HTTPS dùng cổng ngẫu nhiên trên localhost và dữ liệu giả lập.
@@ -48,4 +52,5 @@ python frontend/tests/auth_browser.py --cert $frontendCert --key $frontendKey
 python frontend/tests/catalog_browser.py --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --cart --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --checkout --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --orders --cert $frontendCert --key $frontendKey
 ~~~
