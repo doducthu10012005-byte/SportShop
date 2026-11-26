@@ -112,8 +112,9 @@ try {
   assert(find(dashboard, "[data-recent-orders]").textContent.includes("SP-QA-<b data-injected>204</b>") &&
     !find(dashboard, "[data-injected]") && !find(dashboard, "[data-recent-orders]").textContent.includes("riêng tư"),
     "order table renders text safely and omits unused personal data");
-  assert(find(dashboard, ".admin-nav-planned").textContent.match(/Chưa triển khai/g).length === 3 &&
-    !find(dashboard, ".admin-nav-planned a"), "unimplemented navigation does not link to nonexistent CRUD");
+  assert(find(dashboard, ".admin-nav-planned").textContent.match(/Chưa triển khai/g).length === 2 &&
+    !find(dashboard, ".admin-nav-planned a") &&
+    find(dashboard, '#admin-nav a[href="./catalog/"]'), "catalog link is available and planned screens stay unlinked");
 
   let before = calls(await control()).length;
   range(dashboard, "", "2026-11-30");

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sản phẩm — Quản trị SportShop</title>
+  <link rel="stylesheet" href="../../css/site.css">
+  <link rel="stylesheet" href="../../css/admin.css">
+  <link rel="stylesheet" href="../../css/admin-catalog.css">
+  <script type="module" src="../../js/pages/admin-catalog.js"></script>
+</head>
+<body class="admin-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-top">
+        <a class="brand" href="../" aria-label="SportShop — Quản trị"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+        <button class="button button-outline admin-menu" type="button" aria-controls="admin-nav"
+          aria-expanded="false" data-admin-menu data-admin-only hidden>Menu</button>
+      </div>
+      <nav id="admin-nav" aria-label="Điều hướng quản trị" data-admin-only hidden>
+        <a href="../"><span class="dashboard-icon" aria-hidden="true"></span>Tổng quan</a>
+        <a href="./" data-view="products">Sản phẩm</a>
+        <a href="?view=categories" data-view="categories">Danh mục</a>
+        <a href="?view=brands" data-view="brands">Thương hiệu</a>
+        <ul class="admin-nav-planned">
+          <li><span>Đơn hàng</span><small>Chưa triển khai</small></li>
+          <li><span>Khách hàng</span><small>Chưa triển khai</small></li>
+        </ul>
+        <a class="back-store" href="../../">← Về cửa hàng</a>
+      </nav>
+    </aside>
+    <main id="main" class="admin-main" tabindex="-1">
+      <section class="connection-card admin-guard" data-admin-guard>
+        <h1>Quản trị SportShop</h1>
+        <p data-guard-message role="status">Đang kiểm tra phiên đăng nhập…</p>
+        <a class="button button-primary" href="../../account/?return=admin#login" data-guard-login hidden>Đăng nhập</a>
+        <a class="button button-outline" href="../../account/#profile">Tài khoản</a>
+      </section>
+      <div data-admin-only hidden>
+        <header class="admin-heading">
+          <div><p class="admin-context">Quản trị SportShop</p><h1 data-title>Sản phẩm</h1></div>
+          <div class="admin-identity">
+            <div><strong data-admin-name></strong><span data-admin-email></span></div>
+            <button class="button button-outline" type="button" data-admin-logout>Đăng xuất</button>
+          </div>
+        </header>
+        <section class="admin-panel catalog-management" aria-label="Danh sách quản lý">
+          <div class="admin-panel-heading">
+            <h2>Danh sách</h2>
+            <button class="button button-primary" type="button" data-create>Thêm mới</button>
+          </div>
+          <form class="management-filters" data-filters>
+            <label data-product-filter>Từ khóa<input type="search" name="keyword" placeholder="Tên sản phẩm hoặc SKU"></label>
+            <label data-product-filter>Danh mục<select name="categoryId" disabled><option value="">Tất cả</option></select></label>
+            <label data-product-filter>Thương hiệu<select name="brandId" disabled><option value="">Tất cả</option></select></label>
+            <label data-product-filter>Trạng thái<select name="isActive"><option value="">Tất cả</option><option value="true">Đang hoạt động</option><option value="false">Đã ẩn</option></select></label>
+            <label>Sắp xếp<select name="sort"></select></label>
+            <label>Số dòng mỗi trang<select name="pageSize"><option>20</option><option>10</option><option>50</option></select></label>
+            <button class="button button-outline" type="submit">Áp dụng</button>
+          </form>
+          <p class="form-error" data-lookups-error role="status" hidden></p>
+          <p class="management-notice" data-notice role="status" hidden></p>
+          <div class="state-panel admin-state" data-list-state hidden>
+            <span class="state-icon" aria-hidden="true"></span>
+            <div role="status"><strong data-state-title></strong><p data-state-message></p></div>
+            <button class="button button-outline" type="button" data-reload hidden>Thử lại</button>
+          </div>
+          <div data-list-output hidden>
+            <div class="admin-table-scroll" tabindex="0" role="region" aria-label="Bảng danh sách">
+              <table class="admin-table management-table">
+                <thead><tr data-columns></tr></thead>
+                <tbody data-rows></tbody>
+              </table>
+            </div>
+            <div class="management-pagination" aria-label="Phân trang" data-pagination hidden>
+              <p data-page-info role="status"></p>
+              <div><button type="button" class="button button-outline" data-prev>Trang trước</button>
+                <button type="button" class="button button-outline" data-next>Trang sau</button></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <dialog class="dialog management-dialog" aria-labelledby="editor-title" data-editor>
+    <h2 id="editor-title" data-editor-title></h2>
+    <p data-editor-state role="status" hidden></p>
+    <form class="management-editor" data-editor-form hidden>
+      <div class="management-fields" data-fields></div>
+      <div data-variants hidden>
+        <div class="admin-panel-heading">
+          <h3>Biến thể ban đầu</h3>
+          <button type="button" class="button button-outline" data-add-variant>Thêm biến thể</button>
+        </div>
+        <div data-variant-rows></div>
+      </div>
+      <div data-existing-variants hidden></div>
+      <p class="form-error" role="alert" data-editor-error hidden></p>
+      <div class="management-actions">
+        <button type="button" class="button button-outline" data-editor-close>Đóng</button>
+        <button type="submit" class="button button-primary" data-save>Lưu</button>
+      </div>
+    </form>
+    <button type="button" class="button button-outline" data-editor-dismiss hidden>Đóng</button>
+  </dialog>
+  <dialog class="dialog management-dialog" aria-labelledby="hide-title" data-confirm>
+    <h2 id="hide-title" data-confirm-title></h2>
+    <p data-confirm-text></p>
+    <p class="form-error" role="alert" data-confirm-error hidden></p>
+    <div class="management-actions">
+      <button type="button" class="button button-outline" data-confirm-close autofocus>Đóng</button>
+      <button type="button" class="button button-primary" data-hide>Ẩn</button>
+    </div>
+  </dialog>
+</body>
+</html>

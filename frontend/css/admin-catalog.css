@@ -1,0 +1,46 @@
+.catalog-management { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.catalog-management [data-list-output] { min-width: 0; }
+.management-filters, .management-fields {
+  display: grid;
+  gap: .7rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  align-items: end;
+}
+.management-filters label, .management-fields label { display: grid; gap: .3rem; min-width: 0; font-size: .875rem; font-weight: 650; }
+:is(.management-filters, .management-fields) :is(input, select, textarea):not([type=checkbox]) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #c9bfd6;
+  border-radius: .55rem;
+  padding: .4rem .55rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+}
+.management-fields textarea { resize: vertical; }
+.management-fields :is(textarea, input, select)[aria-invalid] { border-color: #892642; }
+.management-fields .management-checkbox { display: flex; align-items: center; min-height: 44px; gap: .45rem; }
+.management-wide { grid-column: 1 / -1; }
+.management-table { min-width: 36rem; }
+.management-table td { overflow-wrap: anywhere; }
+.management-table td:first-child { max-width: 18rem; font-weight: 650; }
+.management-status { display: inline-block; padding: .2rem .55rem; border-radius: 1rem; background: #eee9f3; }
+.management-status[data-active] { background: #e7f5ef; color: #124b38; }
+.management-actions, .management-pagination, .management-pagination > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.management-pagination { justify-content: space-between; margin-top: .8rem; }
+.management-dialog { width: min(46rem, calc(100% - 1.3rem)); overflow: auto; }
+.management-dialog h2 { overflow-wrap: anywhere; }
+.management-editor { display: grid; gap: .95rem; }
+.management-dialog .management-actions { justify-content: flex-end; margin-top: .5rem; }
+.management-dialog [data-editor-dismiss] { margin-top: .8rem; }
+.management-variant { margin: .6rem 0; border: 1px solid var(--line); border-radius: .65rem; padding: .6rem; min-width: 0; }
+.management-variant legend { padding: 0 .3rem; font-weight: 650; }
+.management-variant > .button { margin-top: .5rem; }
+.catalog-management .management-notice { color: #124b38; font-weight: 650; }
+.management-variant-summary { padding-left: 1.3rem; overflow-wrap: anywhere; }

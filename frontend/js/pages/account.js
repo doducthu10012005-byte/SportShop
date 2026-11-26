@@ -3,8 +3,9 @@ import { changePassword, login, logout, register, restoreSession, sessionMessage
 const views = new Map([...document.querySelectorAll("[data-account-view]")].map(view => [view.dataset.accountView, view]));
 const notice = document.querySelector("[data-session-notice]");
 const progress = document.querySelector("[data-account-progress]");
-const returnToAdmin = new URLSearchParams(location.search).get("return") === "admin";
-const adminSessionEnded = returnToAdmin && new URLSearchParams(location.search).get("expired") === "1";
+const accountQuery = new URLSearchParams(location.search);
+const returnToAdmin = accountQuery.get("return") === "admin";
+const adminSessionEnded = returnToAdmin && accountQuery.get("expired") === "1";
 let currentSession;
 let shownView;
 let registrationMessage = "";
@@ -49,7 +50,9 @@ function render() {
 watchSession(session => {
   currentSession = session;
   if (returnToAdmin && session.phase === "authenticated" && session.user?.role === "Admin" && !session.user.mustChangePassword) {
-    location.replace("../admin/");
+    const view = accountQuery.get("view");
+    location.replace(["products", "categories", "brands"].includes(view)
+      ? "../admin/catalog/?view=" + view : "../admin/");
     return;
   }
   if (session.user) registrationMessage = "";

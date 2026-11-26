@@ -54,8 +54,15 @@ python -B frontend/tests/auth_browser.py --cart --cert $frontendCert --key $fron
 python -B frontend/tests/auth_browser.py --checkout --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --orders --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --dashboard --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --admin-catalog --cert $frontendCert --key $frontendKey
 ~~~
 
 ## Tổng quan quản trị
 
 Mở `https://localhost:5500/admin/` và đăng nhập bằng tài khoản Admin trong môi trường thử. Dashboard mặc định xem bảy ngày gần nhất, tính cả ngày hôm nay theo giờ Việt Nam. Bộ lọc doanh thu hỗ trợ tối đa 366 ngày và nhóm theo ngày hoặc tháng. Bảng đơn gần đây hiển thị tối đa năm đơn và có nút tải lại riêng.
+
+### Quản lý sản phẩm, danh mục và thương hiệu
+
+Từ Dashboard, chọn **Sản phẩm**, **Danh mục** hoặc **Thương hiệu**. Có thể mở thẳng `https://localhost:5500/admin/catalog/`. Trang sản phẩm tìm theo tên hoặc SKU của biến thể và hỗ trợ lọc theo danh mục, thương hiệu và trạng thái. Khi tạo sản phẩm, nhập ít nhất một biến thể ban đầu. Dùng **Ẩn** để ngừng hoạt động và chọn **Đang hoạt động** trong form sửa để bật lại. API kiểm tra tham chiếu khi ẩn danh mục hoặc thương hiệu.
+
+Nếu giao diện chưa xác nhận được kết quả ghi, kiểm tra lại danh sách trước khi gửi thao tác mới.

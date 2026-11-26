@@ -1,14 +1,9 @@
-import { authorizedRequest, logout, restoreSession, sessionMessage, watchSession } from "../auth.js";
+import { authorizedRequest, sessionMessage } from "../auth.js";
+import { startAdminSession } from "../admin-session.js";
 import { money } from "../catalog.js";
 import { orderTime, paymentStatus } from "../orders.js";
 import { renderState } from "../ui.js";
 
-const guard = document.querySelector("[data-admin-guard]");
-const privateSections = document.querySelectorAll("[data-admin-only]");
-const adminName = document.querySelector("[data-admin-name]");
-const adminEmail = document.querySelector("[data-admin-email]");
-const nav = document.querySelector("#admin-nav");
-const menu = document.querySelector("[data-admin-menu]");
 const form = document.querySelector("[data-revenue-filter]");
 const dateError = form.querySelector("#date-error");
 const revenueOutput = document.querySelector("[data-revenue-output]");
@@ -24,11 +19,7 @@ const statusLabels = new Map([
   ["PENDING", "Chờ xác nhận"], ["CONFIRMED", "Đã xác nhận"], ["SHIPPING", "Đang giao"],
   ["DELIVERED", "Đã giao"], ["CANCELLED", "Đã hủy"]
 ]);
-const accountLogin = new URL("../account/?return=admin#login", location.href);
-let adminId = null;
-let signingOut = false;
 let revenueQuery;
-let navigationVersion = 0;
 
 function node(tag, text, className) {
   const item = document.createElement(tag);
@@ -158,7 +149,6 @@ function resource(path, state, output, display, setBusy, onError) {
     setBusy(false);
   };
   async function load(query) {
-    if (adminId == null) return;
     clear();
     const request = active = new AbortController();
     setBusy(true);
@@ -199,24 +189,13 @@ const loadRecent = () => recent.load({ page: 1, pageSize: 5, sort: "-createdAt" 
 function clearDashboard() {
   revenue.clear();
   recent.clear();
-  adminName.textContent = adminEmail.textContent = "";
   revenueOutput.querySelector("[data-report-period]").textContent = "";
   revenueOutput.querySelector("[data-series-details]").open = false;
   showDateError("");
   for (const item of revenueOutput.querySelectorAll("[data-metric]")) item.textContent = "";
   for (const list of [bars, revenueRows, statusRows, orderRows]) list.replaceChildren();
-  nav.removeAttribute("data-open");
-  menu.setAttribute("aria-expanded", "false");
 }
 
-menu.addEventListener("click", () => menu.setAttribute("aria-expanded", String(nav.toggleAttribute("data-open"))));
-nav.addEventListener("keydown", event => {
-  if (event.key === "Escape" && nav.hasAttribute("data-open")) {
-    nav.removeAttribute("data-open");
-    menu.setAttribute("aria-expanded", "false");
-    menu.focus();
-  }
-});
 form.addEventListener("submit", event => {
   event.preventDefault();
   showDateError("");
@@ -230,44 +209,12 @@ retryRevenue.addEventListener("click", () => {
   void revenue.load(revenueQuery);
 });
 refreshOrders.addEventListener("click", () => { void loadRecent(); });
-document.querySelector("[data-admin-logout]").addEventListener("click", () => {
-  signingOut = true;
-  void logout();
-});
-
-watchSession(({ phase, user, message }) => {
-  const version = ++navigationVersion;
-  const allowed = phase === "authenticated" && user?.role === "Admin" && !user.mustChangePassword;
-  const nextId = allowed ? user.userId : null;
-  const changed = adminId !== nextId;
-  adminId = nextId;
-  if (changed || !allowed) clearDashboard();
-  guard.hidden = allowed;
-  for (const section of privateSections) section.hidden = !allowed;
-  if (user?.mustChangePassword) {
-    location.replace("../account/#password");
-    return;
-  }
-  if (allowed) {
-    adminName.textContent = user.fullName || "Quản trị viên";
-    adminEmail.textContent = user.email || "";
-    if (changed) {
-      resetDates();
-      void revenue.load(revenueQuery);
-      void loadRecent();
-    }
-    return;
-  }
-  guard.querySelector("[data-guard-login]").hidden = phase !== "anonymous";
-  guard.querySelector("[data-guard-message]").textContent = user ? "Bạn không có quyền truy cập trang quản trị."
-    : phase === "signing-out" ? "Đang đăng xuất…" : message || "Đang kiểm tra phiên đăng nhập…";
-  if (phase === "anonymous") {
-    // A storage event replacing a session can emit anonymous immediately before checking the replacement.
-    queueMicrotask(() => {
-      if (version !== navigationVersion) return;
-      if (message && !signingOut) accountLogin.searchParams.set("expired", "1");
-      location.replace(accountLogin);
-    });
+startAdminSession({
+  account: new URL("../account/", location.href),
+  clear: clearDashboard,
+  load() {
+    resetDates();
+    void revenue.load(revenueQuery);
+    void loadRecent();
   }
 });
-void restoreSession();
