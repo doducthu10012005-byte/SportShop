@@ -46,6 +46,7 @@ def run(args, temp_path):
     cart = None
     dashboard = None
     catalog_admin = None
+    admin_stock = None
     test_module = "auth_browser.js"
     if args.dashboard:
         from dashboard_fixture import DashboardFixture
@@ -55,6 +56,10 @@ def run(args, temp_path):
         from admin_catalog_fixture import AdminCatalogFixture
         catalog_admin = AdminCatalogFixture()
         test_module = "admin_catalog_browser.js"
+    elif args.admin_stock:
+        from admin_stock_fixture import AdminStockFixture
+        admin_stock = AdminStockFixture()
+        test_module = "admin_stock_browser.js"
     elif args.orders:
         from orders_fixture import OrdersFixture
         cart = OrdersFixture()
@@ -113,7 +118,9 @@ def run(args, temp_path):
         def dispatch(self):
             path = urlsplit(self.path).path.removeprefix("/api/v1/")
             size = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(size)) if size else {}
+            raw = self.rfile.read(size) if size else b""
+            content_type = self.headers.get("Content-Type", "")
+            body = json.loads(raw) if raw and not content_type.startswith("multipart/form-data") else {}
             cookie = SimpleCookie(self.headers.get("Cookie", "")).get("refreshToken")
             incoming_cookie = cookie.value if cookie else None
             bearer = self.headers.get("Authorization")
@@ -121,6 +128,9 @@ def run(args, temp_path):
                 fixture.calls[path] = fixture.calls.get(path, 0) + 1
             if dashboard and path in ("admin/statistics/revenue", "admin/orders"):
                 return dashboard.dispatch(self, path, bearer in fixture.tokens, fixture.user, parse_qs(urlsplit(self.path).query))
+            if admin_stock and (path in ("sizes", "colors") or path.startswith(("admin/products/", "admin/inventory"))):
+                return admin_stock.dispatch(self, path, body, raw, bearer in fixture.tokens, fixture.user,
+                                            parse_qs(urlsplit(self.path).query))
             if catalog_admin and (path.split("/")[0] in ("sizes", "colors") or
                                   path.split("/")[:2] in (["admin", "products"], ["admin", "categories"], ["admin", "brands"])):
                 return catalog_admin.dispatch(self, path, body, bearer in fixture.tokens, fixture.user,
@@ -244,6 +254,8 @@ def run(args, temp_path):
                         result.update(dashboard.control(action))
                     if catalog_admin:
                         result.update(catalog_admin.control(action))
+                    if admin_stock:
+                        result.update(admin_stock.control(action))
                     return self.send_text(json.dumps(result), "application/json")
             return super().do_GET()
 
@@ -299,6 +311,7 @@ if __name__ == "__main__":
     suite.add_argument("--orders", action="store_true", help="Run the Customer Orders scenarios.")
     suite.add_argument("--dashboard", action="store_true", help="Run the Admin Dashboard scenarios.")
     suite.add_argument("--admin-catalog", action="store_true", help="Run the Admin catalog management scenarios.")
+    suite.add_argument("--admin-stock", action="store_true", help="Run the Admin variants, inventory and image scenarios.")
     parser.add_argument("--chrome", default=os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome",
                                                        "Application", "chrome.exe"))
     with tempfile.TemporaryDirectory(prefix="SportShop-AuthChromium-", ignore_cleanup_errors=True) as profile:

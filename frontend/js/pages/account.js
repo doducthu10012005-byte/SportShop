@@ -1,4 +1,5 @@
 import { changePassword, login, logout, register, restoreSession, sessionMessage, watchSession } from "../auth.js";
+import { positiveInt } from "../catalog.js";
 
 const views = new Map([...document.querySelectorAll("[data-account-view]")].map(view => [view.dataset.accountView, view]));
 const notice = document.querySelector("[data-session-notice]");
@@ -51,8 +52,12 @@ watchSession(session => {
   currentSession = session;
   if (returnToAdmin && session.phase === "authenticated" && session.user?.role === "Admin" && !session.user.mustChangePassword) {
     const view = accountQuery.get("view");
-    location.replace(["products", "categories", "brands"].includes(view)
-      ? "../admin/catalog/?view=" + view : "../admin/");
+    const productId = positiveInt(accountQuery.get("productId"));
+    let target = "../admin/";
+    if (["products", "categories", "brands"].includes(view)) target = "../admin/catalog/?view=" + view;
+    if (view === "inventory") target = "../admin/catalog/manage/?view=inventory";
+    if (view === "product" && productId) target = "../admin/catalog/manage/?productId=" + productId;
+    location.replace(target);
     return;
   }
   if (session.user) registrationMessage = "";

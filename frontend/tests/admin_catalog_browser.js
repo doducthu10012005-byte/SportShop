@@ -300,6 +300,9 @@ try {
   await until(() => text(products, "[data-admin-email]") === "admin-other@example.test" && row(products, 24), "second Admin");
   assert(oldPage.querySelector("[data-rows]").children.length === 0 &&
     !oldPage.querySelector("[data-admin-email]").textContent, "a late response cannot restore data from the previous account");
+  // Check the expiry notice in the tab that receives the 401, with no other tabs restoring the cookie.
+  categories.remove();
+  brands.remove();
   await control("revoke-session");
   submit(products, "[data-filters]");
   await until(() => visible(products, "[data-account-view=login]"), "expired redirect");

@@ -18,7 +18,7 @@ export function setOptions(select, options, placeholder, selected = "") {
   select.value = String(selected);
 }
 
-function field(container, name, label, { value, options, placeholder, multiline, wide, ...attributes } = {}) {
+export function field(container, name, label, { value, options, placeholder, multiline, wide, ...attributes } = {}) {
   const input = element(options ? "select" : multiline ? "textarea" : "input", null, { name, ...attributes });
   if (options) setOptions(input, options, placeholder, value);
   else if (attributes.type === "checkbox") input.checked = value !== false;
@@ -82,14 +82,20 @@ export function variantSummary(container, variants) {
   container.hidden = false;
 }
 
-export function addVariant(container, { colors, sizes }) {
+export function variantFields(fields, lookups, variant) {
+  if (!variant) {
+    field(fields, "sizeId", "Kích thước", { required: "", placeholder: "Chọn kích thước", options: lookups.sizes.map(row => [row.sizeId, row.sizeName]) });
+    field(fields, "colorId", "Màu sắc", { required: "", placeholder: "Chọn màu", options: lookups.colors.map(row => [row.colorId, row.colorName]) });
+  }
+  field(fields, "sku", "SKU", { required: "", maxlength: 50, pattern: "[A-Za-z0-9\\-]+", value: variant?.sku });
+  field(fields, "price", "Giá (₫)", { type: "number", required: "", min: 0, max: 1000000000, step: "0.01", value: variant?.price });
+  if (!variant) field(fields, "initialStock", "Tồn kho ban đầu", { type: "number", required: "", min: 0, max: 2147483647, step: 1, value: 0 });
+}
+
+export function addVariant(container, lookups) {
   const variant = element("fieldset", null, { class: "management-variant", "data-variant": "" });
   const fields = element("div", null, { class: "management-fields" });
-  field(fields, "sizeId", "Kích thước", { required: "", placeholder: "Chọn kích thước", options: sizes.map(row => [row.sizeId, row.sizeName]) });
-  field(fields, "colorId", "Màu sắc", { required: "", placeholder: "Chọn màu", options: colors.map(row => [row.colorId, row.colorName]) });
-  field(fields, "sku", "SKU", { required: "", maxlength: 50, pattern: "[A-Za-z0-9\\-]+" });
-  field(fields, "price", "Giá (₫)", { type: "number", required: "", min: 0, max: 1000000000, step: "0.01" });
-  field(fields, "initialStock", "Tồn kho ban đầu", { type: "number", required: "", min: 0, max: 2147483647, step: 1, value: 0 });
+  variantFields(fields, lookups);
   const remove = element("button", "Bỏ biến thể", { type: "button", class: "button button-outline" });
   remove.addEventListener("click", () => {
     const neighbor = variant.previousElementSibling || variant.nextElementSibling;

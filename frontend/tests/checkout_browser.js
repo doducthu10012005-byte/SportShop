@@ -123,7 +123,9 @@ try {
   await until(() => heading(frame) === "Chưa tải được thông tin đặt hàng" &&
     node(frame, "[data-address-status]").textContent.includes("nhập địa chỉ"), "lookup failures");
   assert(submit(frame).disabled, "payment lookup error stops Checkout and address lookup allows manual entry");
-  node(frame, "[data-checkout-state] [data-retry]").click();
+  const retryPayment = node(frame, "[data-checkout-state] [data-retry]");
+  await until(() => !retryPayment.hidden && !retryPayment.disabled, "payment retry enabled after cart load");
+  retryPayment.click();
   await until(() => !submit(frame).disabled, "payment retry");
   assert(methodIds(frame).join(",") === ",3,7", "read-only retry restores payment choices");
   node(frame, "[data-more-addresses]").click();

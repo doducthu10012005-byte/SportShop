@@ -1,0 +1,19 @@
+.stock-workspace { display: grid; gap: 1rem; min-width: 0; }
+.stock-workspace .management-table :is(th,td) { overflow-wrap: anywhere; }
+.stock-workspace .management-actions { justify-content: flex-end; }
+.stock-workspace .state-panel { margin: 0; }
+.stock-workspace [data-feedback] { padding: .75rem 1rem; border-radius: .65rem; background: #e7f5ef; color: #124b38; }
+.stock-workspace [data-feedback][data-warning] { background: #fff2dc; color: #734514; }
+.stock-operation-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.stock-workspace .stock-filters { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.stock-filter-options { display: flex; flex-wrap: wrap; gap: .65rem; }
+.stock-photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .85rem; }
+.stock-photo { min-width: 0; padding: .7rem; border: 1px solid var(--line); border-radius: .7rem; display: grid; gap: .5rem; }
+.stock-photo .product-photo { aspect-ratio: 4 / 3; }
+.stock-photo img, .stock-preview img { object-fit: contain; }
+.stock-preview { margin: 0; min-width: 0; display: grid; gap: .35rem; overflow-wrap: anywhere; }
+.stock-preview img { width: min(16rem,100%); max-height: 11rem; border-radius: .65rem; background: var(--ground); }
+.stock-information { margin-bottom: .35rem; }
+@media (max-width: 510px) {
+  .stock-workspace .management-pagination .button { padding-inline: .7rem; }
+}

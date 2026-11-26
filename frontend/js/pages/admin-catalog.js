@@ -138,6 +138,13 @@ function showList(items) {
       "aria-label": "Sửa " + row[resource.name] });
     edit.addEventListener("click", () => void openEditor(row));
     actions.append(edit);
+    if (productView) {
+      const detail = new URL("./manage/", location.href);
+      detail.searchParams.set("productId", row.productId);
+      actions.append(element("a", "Biến thể và ảnh", {
+        href: detail.href, class: "button button-outline", "aria-label": "Biến thể và ảnh của " + row.productName
+      }));
+    }
     if (row.isActive) {
       const disable = element("button", "Ẩn", { class: "button button-outline", type: "button", "data-disable": "",
         "aria-label": "Ẩn " + row[resource.name] });

@@ -55,6 +55,7 @@ python -B frontend/tests/auth_browser.py --checkout --cert $frontendCert --key $
 python -B frontend/tests/auth_browser.py --orders --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --dashboard --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-catalog --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --admin-stock --cert $frontendCert --key $frontendKey
 ~~~
 
 ## Tổng quan quản trị
@@ -66,3 +67,9 @@ Mở `https://localhost:5500/admin/` và đăng nhập bằng tài khoản Admin
 Từ Dashboard, chọn **Sản phẩm**, **Danh mục** hoặc **Thương hiệu**. Có thể mở thẳng `https://localhost:5500/admin/catalog/`. Trang sản phẩm tìm theo tên hoặc SKU của biến thể và hỗ trợ lọc theo danh mục, thương hiệu và trạng thái. Khi tạo sản phẩm, nhập ít nhất một biến thể ban đầu. Dùng **Ẩn** để ngừng hoạt động và chọn **Đang hoạt động** trong form sửa để bật lại. API kiểm tra tham chiếu khi ẩn danh mục hoặc thương hiệu.
 
 Nếu giao diện chưa xác nhận được kết quả ghi, kiểm tra lại danh sách trước khi gửi thao tác mới.
+
+### Biến thể, tồn kho và ảnh sản phẩm
+
+Trong danh sách **Sản phẩm**, chọn **Biến thể và ảnh** ở sản phẩm cần quản lý. Form tạo biến thể cho phép nhập tồn kho ban đầu. Form sửa chỉ cập nhật SKU, giá và trạng thái. Để bổ sung hàng hoặc kiểm kê, chọn **Tồn kho** ở biến thể hoặc mở `https://localhost:5500/admin/catalog/manage/?view=inventory`. **Nhập thêm** cộng số lượng vào kho. **Kiểm kê** đặt số dư tuyệt đối và yêu cầu ghi lý do. Mỗi biến thể có lịch sử giao dịch riêng.
+
+Mỗi lần tải lên một ảnh JPG, PNG hoặc WEBP, tối đa 2 MB, 4000 × 4000 px và 10 ảnh cho mỗi sản phẩm. Chọn **Dùng làm ảnh đại diện** khi tải lên để thay ảnh đại diện hiện tại. Xóa ảnh đại diện sẽ để sản phẩm chưa có ảnh đại diện cho đến khi tải lên ảnh đại diện mới.
