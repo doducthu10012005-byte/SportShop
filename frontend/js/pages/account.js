@@ -3,6 +3,8 @@ import { changePassword, login, logout, register, restoreSession, sessionMessage
 const views = new Map([...document.querySelectorAll("[data-account-view]")].map(view => [view.dataset.accountView, view]));
 const notice = document.querySelector("[data-session-notice]");
 const progress = document.querySelector("[data-account-progress]");
+const returnToAdmin = new URLSearchParams(location.search).get("return") === "admin";
+const adminSessionEnded = returnToAdmin && new URLSearchParams(location.search).get("expired") === "1";
 let currentSession;
 let shownView;
 let registrationMessage = "";
@@ -19,7 +21,8 @@ function render() {
   if (!busy && location.hash !== "#" + page) history.replaceState(null, "", "#" + page);
   progress.hidden = !busy;
   progress.querySelector("p").textContent = phase === "signing-out" ? "Đang đăng xuất…" : "Đang kiểm tra phiên đăng nhập…";
-  notice.textContent = busy ? "" : registrationMessage || message;
+  notice.textContent = busy ? "" : registrationMessage || message ||
+    (phase === "anonymous" && adminSessionEnded ? "Phiên quản trị đã kết thúc. Vui lòng đăng nhập lại." : "");
   notice.hidden = !notice.textContent;
   document.querySelector("[data-store-link]").hidden = busy || forced;
   document.querySelector("[data-profile-back]").hidden = forced;
@@ -45,6 +48,10 @@ function render() {
 
 watchSession(session => {
   currentSession = session;
+  if (returnToAdmin && session.phase === "authenticated" && session.user?.role === "Admin" && !session.user.mustChangePassword) {
+    location.replace("../admin/");
+    return;
+  }
   if (session.user) registrationMessage = "";
   render();
 });

@@ -44,8 +44,13 @@ class Fixture:
 def run(args, temp_path):
     fixture = Fixture()
     cart = None
+    dashboard = None
     test_module = "auth_browser.js"
-    if args.orders:
+    if args.dashboard:
+        from dashboard_fixture import DashboardFixture
+        dashboard = DashboardFixture()
+        test_module = "dashboard_browser.js"
+    elif args.orders:
         from orders_fixture import OrdersFixture
         cart = OrdersFixture()
         test_module = "orders_browser.js"
@@ -109,6 +114,8 @@ def run(args, temp_path):
             bearer = self.headers.get("Authorization")
             with fixture.mutex:
                 fixture.calls[path] = fixture.calls.get(path, 0) + 1
+            if dashboard and path in ("admin/statistics/revenue", "admin/orders"):
+                return dashboard.dispatch(self, path, bearer in fixture.tokens, fixture.user, parse_qs(urlsplit(self.path).query))
             if args.orders and (path.startswith("orders/") or (path == "orders" and self.command == "GET")):
                 return cart.history(self, path, body, bearer in fixture.tokens, fixture.user, parse_qs(urlsplit(self.path).query))
             if (args.checkout or args.orders) and path in ("orders", "payment-methods", "users/me/addresses"):
@@ -137,8 +144,8 @@ def run(args, temp_path):
                     return self.error(403, code, "Tài khoản chưa hoạt động.")
                 if body["password"] != "Test-Password123":
                     return self.error(401, "INVALID_CREDENTIALS", "Email hoặc mật khẩu không đúng.")
-                fixture.user = {"userId": 2 if name in ("admin", "forced") else 1,
-                                "role": "Admin" if name in ("admin", "forced") else "Customer",
+                fixture.user = {"userId": 3 if name == "admin-other" else 2 if name in ("admin", "forced") else 1,
+                                "role": "Admin" if name in ("admin", "admin-other", "forced") else "Customer",
                                 "mustChangePassword": name == "forced", "email": body["email"],
                                 "fullName": "Người dùng thử", "phoneNumber": "0912345678"}
                 return self.success(*fixture.session())
@@ -224,6 +231,8 @@ def run(args, temp_path):
                               "concurrent": fixture.concurrent, "maxConcurrent": fixture.max_concurrent}
                     if cart:
                         result.update(cart.control(action))
+                    if dashboard:
+                        result.update(dashboard.control(action))
                     return self.send_text(json.dumps(result), "application/json")
             return super().do_GET()
 
@@ -277,6 +286,7 @@ if __name__ == "__main__":
     suite.add_argument("--cart", action="store_true", help="Run the Customer cart scenarios with the Auth fixture.")
     suite.add_argument("--checkout", action="store_true", help="Run the Checkout scenarios with the Auth and Cart fixtures.")
     suite.add_argument("--orders", action="store_true", help="Run the Customer Orders scenarios.")
+    suite.add_argument("--dashboard", action="store_true", help="Run the Admin Dashboard scenarios.")
     parser.add_argument("--chrome", default=os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome",
                                                        "Application", "chrome.exe"))
     with tempfile.TemporaryDirectory(prefix="SportShop-AuthChromium-", ignore_cleanup_errors=True) as profile:

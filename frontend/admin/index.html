@@ -3,60 +3,113 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quản trị — SportShop</title>
+  <title>Tổng quan quản trị — SportShop</title>
   <link rel="stylesheet" href="../css/site.css">
+  <link rel="stylesheet" href="../css/admin.css">
   <script type="module" src="../js/pages/admin.js"></script>
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main">Đến nội dung chính</a>
   <div class="admin-layout">
     <aside class="admin-sidebar">
-      <a class="brand" href="./" aria-label="SportShop — Quản trị"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
-      <nav aria-label="Điều hướng quản trị">
-        <a href="#main" aria-current="page" data-admin-only hidden><span class="dashboard-icon" aria-hidden="true"></span>Tổng quan</a>
+      <div class="admin-sidebar-top">
+        <a class="brand" href="./" aria-label="SportShop — Quản trị"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+        <button class="button button-outline admin-menu" type="button" aria-controls="admin-nav"
+          aria-expanded="false" data-admin-menu data-admin-only hidden>Menu</button>
+      </div>
+      <nav aria-label="Điều hướng quản trị" id="admin-nav" data-admin-only hidden>
+        <a href="#main" aria-current="page"><span class="dashboard-icon" aria-hidden="true"></span>Tổng quan</a>
+        <ul class="admin-nav-planned">
+          <li><span>Sản phẩm</span><small>Chưa triển khai</small></li>
+          <li><span>Đơn hàng</span><small>Chưa triển khai</small></li>
+          <li><span>Khách hàng</span><small>Chưa triển khai</small></li>
+        </ul>
         <a class="back-store" href="../">← Về cửa hàng</a>
       </nav>
     </aside>
     <main id="main" class="admin-main" tabindex="-1">
-      <section class="connection-card" data-admin-guard>
+      <section class="connection-card admin-guard" data-admin-guard>
         <h1>Quản trị SportShop</h1>
         <p data-guard-message role="status">Đang kiểm tra phiên đăng nhập…</p>
-        <a class="button button-primary" href="../account/#login" data-guard-login hidden>Đăng nhập</a>
+        <a class="button button-primary" href="../account/?return=admin#login" data-guard-login hidden>Đăng nhập</a>
+        <a class="button button-outline" href="../account/#profile">Tài khoản</a>
       </section>
-      <header class="admin-heading" data-admin-only hidden>
-        <div><p class="admin-context">Quản trị SportShop</p><h1>Tổng quan</h1></div>
-        <div class="account-actions">
-          <a class="button button-outline" href="../account/#profile">Tài khoản</a>
-          <button class="button button-outline" type="button" data-dialog="connection-help">Trợ giúp</button>
+
+      <div data-admin-only hidden>
+        <header class="admin-heading">
+          <div><p class="admin-context">Quản trị SportShop</p><h1>Tổng quan</h1></div>
+          <div class="admin-identity">
+            <div><strong data-admin-name></strong><span data-admin-email></span></div>
+            <button class="button button-outline" type="button" data-admin-logout>Đăng xuất</button>
+          </div>
+        </header>
+
+        <section class="admin-panel revenue-filter" aria-labelledby="revenue-title">
+          <div><h2 id="revenue-title">Báo cáo doanh thu</h2><p>Đơn đã giao, theo giờ Việt Nam</p></div>
+          <form data-revenue-filter novalidate>
+            <label>Từ ngày<input name="from" type="date" required aria-describedby="date-error"></label>
+            <label>Đến ngày<input name="to" type="date" required aria-describedby="date-error"></label>
+            <label>Nhóm theo<select name="groupBy"><option value="day">Ngày</option><option value="month">Tháng</option></select></label>
+            <button class="button button-primary" type="submit">Áp dụng</button>
+            <p class="admin-error" id="date-error" role="alert" hidden></p>
+          </form>
+        </section>
+
+        <div class="state-panel admin-state" data-revenue-state hidden>
+          <span class="state-icon" aria-hidden="true"></span>
+          <div role="status"><strong data-state-title></strong><p data-state-message></p></div>
+          <button class="button button-outline" type="button" data-revenue-retry hidden>Thử lại</button>
         </div>
-      </header>
-      <section class="connection-card" aria-labelledby="connection-title" data-admin-only hidden>
-        <h2 id="connection-title">Kết nối API</h2>
-        <p>Kiểm tra kết nối của giao diện tới Backend Development.</p>
-        <form id="connection-form">
-          <div class="field">
-            <label for="api-endpoint">Địa chỉ API</label>
-            <div class="field-row">
-              <input id="api-endpoint" type="url" readonly>
-              <button id="copy-endpoint" class="button button-outline" type="button">Sao chép</button>
-            </div>
+        <div data-revenue-output hidden>
+          <p class="report-period" data-report-period></p>
+          <dl class="admin-metrics">
+            <div class="admin-metric metric-primary"><dt>Doanh thu tiền hàng</dt><dd data-metric="subtotal"></dd></div>
+            <div class="admin-metric"><dt>Phí vận chuyển</dt><dd data-metric="shippingFee"></dd></div>
+            <div class="admin-metric"><dt>Tổng khách thanh toán</dt><dd data-metric="totalAmount"></dd></div>
+            <div class="admin-metric"><dt>Đơn đã giao</dt><dd data-metric="totalOrders"></dd></div>
+            <div class="admin-metric"><dt>Tiền hàng trung bình</dt><dd data-metric="averageSubtotal"></dd></div>
+          </dl>
+          <div class="dashboard-grid">
+            <section class="admin-panel admin-chart" aria-labelledby="chart-title">
+              <h2 id="chart-title">Doanh thu theo thời gian</h2>
+              <p data-chart-frequency></p>
+              <p class="admin-empty" data-series-empty hidden>Chưa ghi nhận đơn đã giao trong khoảng ngày này.</p>
+              <div class="chart-scroll" tabindex="0" role="region" aria-labelledby="chart-title" data-chart-scroll hidden>
+                <ul class="revenue-bars" data-revenue-bars></ul>
+              </div>
+              <details class="series-details" data-series-details hidden>
+                <summary>Xem số liệu theo kỳ</summary>
+                <div class="admin-table-scroll" tabindex="0" role="region" aria-label="Bảng doanh thu theo kỳ">
+                  <table class="admin-table"><thead><tr><th scope="col">Kỳ</th><th scope="col">Tiền hàng</th><th scope="col">Phí vận chuyển</th>
+                    <th scope="col">Tổng thanh toán</th><th scope="col">Đơn đã giao</th></tr></thead><tbody data-revenue-rows></tbody></table>
+                </div>
+              </details>
+            </section>
+            <section class="admin-panel" aria-labelledby="status-title">
+              <h2 id="status-title">Đơn theo trạng thái</h2>
+              <p>Đếm theo ngày tạo đơn trong khoảng đã chọn.</p>
+              <p class="admin-empty" data-status-empty hidden></p>
+              <ul class="admin-statuses" data-order-statuses></ul>
+            </section>
           </div>
-          <div class="state-panel" id="connection-state" data-state="empty" aria-live="polite" aria-busy="false">
-            <span class="state-icon" aria-hidden="true"></span><div>
-              <strong data-state-title>Chưa kiểm tra</strong>
-              <p data-state-message>Chọn kiểm tra kết nối để gửi một yêu cầu đọc công khai.</p>
-            </div>
+        </div>
+
+        <section class="admin-panel admin-recent" aria-labelledby="recent-title">
+          <div class="admin-panel-heading">
+            <div><h2 id="recent-title">Đơn hàng gần đây</h2><p>Tối đa 5 đơn mới nhất, mọi trạng thái.</p></div>
+            <button class="button button-outline" data-orders-reload type="button">Tải lại</button>
           </div>
-          <button class="button button-primary" type="submit" id="check-connection">Kiểm tra kết nối <span aria-hidden="true">↗</span></button>
-        </form>
-      </section>
+          <div class="state-panel admin-state" data-orders-state hidden>
+            <span class="state-icon" aria-hidden="true"></span>
+            <div role="status"><strong data-state-title></strong><p data-state-message></p></div>
+          </div>
+          <div class="admin-table-scroll" tabindex="0" role="region" aria-labelledby="recent-title" data-recent-output hidden>
+            <table class="admin-table"><thead><tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th>
+              <th scope="col">Trạng thái</th><th scope="col">Thanh toán</th><th scope="col">Tổng tiền</th></tr></thead><tbody data-recent-orders></tbody></table>
+          </div>
+        </section>
+      </div>
     </main>
   </div>
-  <dialog class="dialog" id="connection-help" aria-labelledby="help-title">
-    <form method="dialog"><button class="dialog-close icon-button" aria-label="Đóng" autofocus>×</button></form>
-    <h2 id="help-title">Kết nối Development</h2>
-    <p>Chạy Backend ở địa chỉ HTTPS trong cấu hình API. Dùng <code>localhost</code> cho cả cửa hàng và API để tương thích với cookie đăng nhập.</p>
-  </dialog>
-  <div class="toast" data-toast role="status" aria-live="polite"></div>
 </body>
 </html>

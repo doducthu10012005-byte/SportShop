@@ -1,55 +1,273 @@
-import { ApiError, request } from "../api.js";
-import { API_BASE_URL } from "../config.js";
-import { renderState, showToast } from "../ui.js";
-import { restoreSession, watchSession } from "../auth.js";
+import { authorizedRequest, logout, restoreSession, sessionMessage, watchSession } from "../auth.js";
+import { money } from "../catalog.js";
+import { orderTime, paymentStatus } from "../orders.js";
+import { renderState } from "../ui.js";
 
 const guard = document.querySelector("[data-admin-guard]");
-const signIn = guard.querySelector("[data-guard-login]");
-const adminSections = document.querySelectorAll("[data-admin-only]");
+const privateSections = document.querySelectorAll("[data-admin-only]");
+const adminName = document.querySelector("[data-admin-name]");
+const adminEmail = document.querySelector("[data-admin-email]");
+const nav = document.querySelector("#admin-nav");
+const menu = document.querySelector("[data-admin-menu]");
+const form = document.querySelector("[data-revenue-filter]");
+const dateError = form.querySelector("#date-error");
+const revenueOutput = document.querySelector("[data-revenue-output]");
+const ordersOutput = document.querySelector("[data-recent-output]");
+const bars = revenueOutput.querySelector("[data-revenue-bars]");
+const revenueRows = revenueOutput.querySelector("[data-revenue-rows]");
+const statusRows = revenueOutput.querySelector("[data-order-statuses]");
+const orderRows = ordersOutput.querySelector("[data-recent-orders]");
+const refreshOrders = document.querySelector("[data-orders-reload]");
+const number = new Intl.NumberFormat("vi-VN");
+const vietnam = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" });
+const statusLabels = new Map([
+  ["PENDING", "Chờ xác nhận"], ["CONFIRMED", "Đã xác nhận"], ["SHIPPING", "Đang giao"],
+  ["DELIVERED", "Đã giao"], ["CANCELLED", "Đã hủy"]
+]);
+const accountLogin = new URL("../account/?return=admin#login", location.href);
+let adminId = null;
+let signingOut = false;
+let revenueQuery;
+let navigationVersion = 0;
+
+function node(tag, text, className) {
+  const item = document.createElement(tag);
+  if (text != null) item.textContent = text;
+  if (className) item.className = className;
+  return item;
+}
+
+function resetDates() {
+  // Subtract calendar days from the local date, independent of the browser timezone.
+  const parts = Object.fromEntries(vietnam.formatToParts(new Date()).map(part => [part.type, part.value]));
+  const today = `${parts.year}-${parts.month}-${parts.day}`;
+  const start = new Date(today + "T00:00:00Z");
+  start.setUTCDate(start.getUTCDate() - 6);
+  form.elements.from.value = start.toISOString().slice(0, 10);
+  form.elements.to.value = today;
+  form.elements.groupBy.value = "day";
+  revenueQuery = readQuery();
+  showDateError("");
+}
+
+function readQuery() {
+  return Object.fromEntries(new FormData(form));
+}
+
+function showDateError(message, field) {
+  dateError.hidden = !message;
+  dateError.textContent = message;
+  for (const input of form.elements) input.removeAttribute("aria-invalid");
+  if (field) {
+    field.setAttribute("aria-invalid", "true");
+    field.focus();
+  }
+}
+
+function validRange(query) {
+  function timestamp(value) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) && !value.startsWith("0000") ? Date.parse(value + "T00:00:00Z") : NaN;
+  }
+  const from = timestamp(query.from);
+  const to = timestamp(query.to);
+  if (!Number.isFinite(from)) showDateError("Chọn ngày bắt đầu hợp lệ.", form.elements.from);
+  else if (!Number.isFinite(to)) showDateError("Chọn ngày kết thúc hợp lệ.", form.elements.to);
+  else if (from > to) showDateError("Ngày kết thúc phải từ ngày bắt đầu trở đi.", form.elements.to);
+  else if ((to - from) / 86400000 >= 366) showDateError("Khoảng thời gian tối đa 366 ngày.", form.elements.to);
+  else return true;
+  return false;
+}
+
+function periodLabel(period, grouping) {
+  const [year, month, day] = period.split("-");
+  return grouping === "month" ? `${month}/${year}` : `${day}/${month}`;
+}
+
+function tableRow(heading, ...cells) {
+  const row = node("tr");
+  const title = node("th", heading);
+  title.scope = "row";
+  row.append(title, ...cells.map(value => {
+    const cell = node("td");
+    cell.append(value);
+    return cell;
+  }));
+  return row;
+}
+
+function renderRevenue(data, query) {
+  const { summary, series, ordersByStatus } = data;
+  const metrics = [...revenueOutput.querySelectorAll("[data-metric]")];
+  if (!summary || !metrics.every(item => Number.isFinite(summary[item.dataset.metric])) || !Array.isArray(series))
+    throw new Error("Invalid revenue response");
+  for (const item of metrics) {
+    const key = item.dataset.metric;
+    item.textContent = key === "totalOrders" ? number.format(summary[key]) : money(summary[key]);
+  }
+  revenueOutput.querySelector("[data-report-period]").textContent = `${data.from} đến ${data.to}`;
+  revenueOutput.querySelector("[data-chart-frequency]").textContent = query.groupBy === "month"
+    ? "Tiền hàng theo tháng" : "Tiền hàng theo ngày";
+  const maximum = Math.max(0, ...series.map(bucket => bucket.subtotal));
+  bars.replaceChildren(...series.map(bucket => {
+    const item = node("li");
+    const column = node("span", null, "bar-column");
+    column.setAttribute("aria-hidden", "true");
+    column.title = `${bucket.period} · ${money(bucket.subtotal)}`;
+    const fill = node("span", null, "bar-fill");
+    const height = maximum > 0 && Number.isFinite(bucket.subtotal) ? 100 * Math.max(0, bucket.subtotal) / maximum : 0;
+    fill.style.setProperty("--bar", height + "%");
+    column.append(fill);
+    item.append(column, node("span", periodLabel(bucket.period, query.groupBy), "bar-label"));
+    item.setAttribute("aria-label", column.title);
+    return item;
+  }));
+  revenueRows.replaceChildren(...series.map(bucket => tableRow(bucket.period, money(bucket.subtotal), money(bucket.shippingFee),
+    money(bucket.totalAmount), number.format(bucket.orderCount))));
+  revenueOutput.querySelector("[data-chart-scroll]").hidden = !series.length;
+  revenueOutput.querySelector("[data-series-details]").hidden = !series.length;
+  revenueOutput.querySelector("[data-series-empty]").hidden = Boolean(series.length);
+
+  const statuses = Array.isArray(ordersByStatus) ? ordersByStatus : [];
+  statusRows.replaceChildren(...statuses.map(status => {
+    const entry = node("li");
+    entry.append(node("span", statusLabels.get(status.statusCode) ?? status.statusCode),
+      node("strong", number.format(status.count)));
+    return entry;
+  }));
+  const statusEmpty = revenueOutput.querySelector("[data-status-empty]");
+  statusEmpty.hidden = Boolean(statuses.length);
+  statusEmpty.textContent = Array.isArray(ordersByStatus) ? "Không có đơn trong khoảng ngày đã chọn." : "API chưa cung cấp số đơn theo trạng thái.";
+}
+
+function renderOrders(data) {
+  orderRows.replaceChildren(...data.items.map(order => {
+    const payment = node("div", order.paymentMethodCode === "COD" ? "COD" : order.paymentMethodCode === "BANK_TRANSFER"
+      ? "Chuyển khoản" : order.paymentMethodCode);
+    payment.append(node("small", paymentStatus(order.paymentStatus), "payment-status"));
+    return tableRow(order.orderCode, orderTime(order.createdAt), order.status.statusName, payment, money(order.totalAmount));
+  }));
+  return data.items.length > 0;
+}
+
+function resource(path, state, output, display, setBusy, onError) {
+  let active;
+  const clear = () => {
+    active?.abort();
+    active = null;
+    output.hidden = state.hidden = true;
+    setBusy(false);
+  };
+  async function load(query) {
+    if (adminId == null) return;
+    clear();
+    const request = active = new AbortController();
+    setBusy(true);
+    state.hidden = false;
+    renderState(state, "loading", "Đang tải dữ liệu", "");
+    try {
+      const { data } = await authorizedRequest(path, {
+        query, signal: AbortSignal.any([request.signal, AbortSignal.timeout(12000)])
+      });
+      if (request !== active) return;
+      if (display(data, query) === false) renderState(state, "empty", "Chưa có đơn hàng", "");
+      else {
+        output.hidden = false;
+        state.hidden = true;
+      }
+    } catch (error) {
+      if (request !== active) return;
+      renderState(state, "error", error.status === 403 ? "Không có quyền xem dữ liệu" : "Chưa tải được dữ liệu", sessionMessage(error));
+      onError?.(error);
+    } finally {
+      if (request === active) setBusy(false);
+    }
+  }
+  return { clear, load };
+}
+
+const revenueState = document.querySelector("[data-revenue-state]");
+const retryRevenue = revenueState.querySelector("[data-revenue-retry]");
+const revenue = resource("/admin/statistics/revenue", revenueState, revenueOutput, renderRevenue,
+  busy => { retryRevenue.hidden = busy; }, error => {
+    const field = error.fields?.find(item => ["from", "to", "groupBy"].includes(item.field));
+    if (error.code === "VALIDATION_ERROR" && field) showDateError(field.message, form.elements[field.field]);
+  });
+const recent = resource("/admin/orders", document.querySelector("[data-orders-state]"), ordersOutput, renderOrders,
+  busy => { refreshOrders.disabled = busy; });
+const loadRecent = () => recent.load({ page: 1, pageSize: 5, sort: "-createdAt" });
+
+function clearDashboard() {
+  revenue.clear();
+  recent.clear();
+  adminName.textContent = adminEmail.textContent = "";
+  revenueOutput.querySelector("[data-report-period]").textContent = "";
+  revenueOutput.querySelector("[data-series-details]").open = false;
+  showDateError("");
+  for (const item of revenueOutput.querySelectorAll("[data-metric]")) item.textContent = "";
+  for (const list of [bars, revenueRows, statusRows, orderRows]) list.replaceChildren();
+  nav.removeAttribute("data-open");
+  menu.setAttribute("aria-expanded", "false");
+}
+
+menu.addEventListener("click", () => menu.setAttribute("aria-expanded", String(nav.toggleAttribute("data-open"))));
+nav.addEventListener("keydown", event => {
+  if (event.key === "Escape" && nav.hasAttribute("data-open")) {
+    nav.removeAttribute("data-open");
+    menu.setAttribute("aria-expanded", "false");
+    menu.focus();
+  }
+});
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  showDateError("");
+  const query = readQuery();
+  if (!validRange(query)) return;
+  revenueQuery = query;
+  void revenue.load(query);
+});
+retryRevenue.addEventListener("click", () => {
+  showDateError("");
+  void revenue.load(revenueQuery);
+});
+refreshOrders.addEventListener("click", () => { void loadRecent(); });
+document.querySelector("[data-admin-logout]").addEventListener("click", () => {
+  signingOut = true;
+  void logout();
+});
+
 watchSession(({ phase, user, message }) => {
-  const allowed = user?.role === "Admin" && !user.mustChangePassword;
+  const version = ++navigationVersion;
+  const allowed = phase === "authenticated" && user?.role === "Admin" && !user.mustChangePassword;
+  const nextId = allowed ? user.userId : null;
+  const changed = adminId !== nextId;
+  adminId = nextId;
+  if (changed || !allowed) clearDashboard();
   guard.hidden = allowed;
-  for (const section of adminSections) section.hidden = !allowed;
+  for (const section of privateSections) section.hidden = !allowed;
   if (user?.mustChangePassword) {
-    window.location.replace("../account/#password");
+    location.replace("../account/#password");
     return;
   }
-  signIn.hidden = phase !== "anonymous";
+  if (allowed) {
+    adminName.textContent = user.fullName || "Quản trị viên";
+    adminEmail.textContent = user.email || "";
+    if (changed) {
+      resetDates();
+      void revenue.load(revenueQuery);
+      void loadRecent();
+    }
+    return;
+  }
+  guard.querySelector("[data-guard-login]").hidden = phase !== "anonymous";
   guard.querySelector("[data-guard-message]").textContent = user ? "Bạn không có quyền truy cập trang quản trị."
-    : phase === "anonymous" ? message || "Đăng nhập bằng tài khoản Admin để tiếp tục." : "Đang kiểm tra phiên đăng nhập…";
+    : phase === "signing-out" ? "Đang đăng xuất…" : message || "Đang kiểm tra phiên đăng nhập…";
+  if (phase === "anonymous") {
+    // A storage event replacing a session can emit anonymous immediately before checking the replacement.
+    queueMicrotask(() => {
+      if (version !== navigationVersion) return;
+      if (message && !signingOut) accountLogin.searchParams.set("expired", "1");
+      location.replace(accountLogin);
+    });
+  }
 });
 void restoreSession();
-
-const endpoint = document.querySelector("#api-endpoint");
-const feedback = document.querySelector("#connection-state");
-const check = document.querySelector("#check-connection");
-const copy = document.querySelector("#copy-endpoint");
-endpoint.value = API_BASE_URL;
-
-document.querySelector("#connection-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  if (check.disabled) return;
-  check.disabled = true;
-  renderState(feedback, "loading", "Đang kiểm tra kết nối", "Đang chờ phản hồi từ API.");
-  try {
-    await request("/payment-methods", { auth: false, signal: AbortSignal.timeout(8000) });
-    renderState(feedback, "success", "Kết nối thành công", "API đã trả về phản hồi hợp lệ.");
-    showToast("Đã kết nối với API.");
-  } catch (error) {
-    const message = error instanceof ApiError ? error.message : "API không phản hồi trong thời gian chờ.";
-    renderState(feedback, "error", "Không thể kết nối", message);
-  } finally {
-    check.disabled = false;
-  }
-});
-
-copy.addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText(endpoint.value);
-    showToast("Đã sao chép địa chỉ API.");
-  } catch {
-    endpoint.focus();
-    endpoint.select();
-    showToast("Đã chọn địa chỉ. Dùng Ctrl+C hoặc ⌘C để sao chép.");
-  }
-});

@@ -13,7 +13,7 @@ python -m http.server 5500 --bind 127.0.0.1 --directory frontend --tls-cert $fro
 
 Mở `https://localhost:5500/` cho cửa hàng hoặc `https://localhost:5500/admin/` cho giao diện quản trị. Dùng tên `localhost` cho cả hai origin. Giữ chứng chỉ và khóa riêng trong thư mục tạm ngoài Git.
 
-API Development được cấu hình trong `js/config.js`, mặc định là `https://localhost:7132/api/v1`. Backend Development đã cho phép origin `https://localhost:5500`. Sau khi Admin đăng nhập, nút **Kiểm tra kết nối** ở trang quản trị gọi `GET /payment-methods`.
+API Development được cấu hình trong `js/config.js`, mặc định là `https://localhost:7132/api/v1`. Backend Development đã cho phép origin `https://localhost:5500`.
 
 ## Xác thực
 
@@ -53,4 +53,9 @@ python frontend/tests/catalog_browser.py --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --cart --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --checkout --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --orders --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --dashboard --cert $frontendCert --key $frontendKey
 ~~~
+
+## Tổng quan quản trị
+
+Mở `https://localhost:5500/admin/` và đăng nhập bằng tài khoản Admin trong môi trường thử. Dashboard mặc định xem bảy ngày gần nhất, tính cả ngày hôm nay theo giờ Việt Nam. Bộ lọc doanh thu hỗ trợ tối đa 366 ngày và nhóm theo ngày hoặc tháng. Bảng đơn gần đây hiển thị tối đa năm đơn và có nút tải lại riêng.
