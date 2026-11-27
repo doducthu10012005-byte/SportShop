@@ -1,7 +1,7 @@
 import { authorizedRequest, sessionMessage } from "../auth.js";
 import { startAdminSession } from "../admin-session.js";
 import { money } from "../catalog.js";
-import { orderTime, paymentStatus } from "../orders.js";
+import { adminOrderDetailUrl, orderTime, paymentStatus } from "../orders.js";
 import { renderState } from "../ui.js";
 
 const form = document.querySelector("[data-revenue-filter]");
@@ -76,7 +76,8 @@ function periodLabel(period, grouping) {
 
 function tableRow(heading, ...cells) {
   const row = node("tr");
-  const title = node("th", heading);
+  const title = node("th");
+  title.append(heading);
   title.scope = "row";
   row.append(title, ...cells.map(value => {
     const cell = node("td");
@@ -135,7 +136,10 @@ function renderOrders(data) {
     const payment = node("div", order.paymentMethodCode === "COD" ? "COD" : order.paymentMethodCode === "BANK_TRANSFER"
       ? "Chuyển khoản" : order.paymentMethodCode);
     payment.append(node("small", paymentStatus(order.paymentStatus), "payment-status"));
-    return tableRow(order.orderCode, orderTime(order.createdAt), order.status.statusName, payment, money(order.totalAmount));
+    const url = adminOrderDetailUrl(order.orderId);
+    const code = url ? node("a", order.orderCode, "admin-order-link") : order.orderCode;
+    if (url) code.href = url;
+    return tableRow(code, orderTime(order.createdAt), order.status.statusName, payment, money(order.totalAmount));
   }));
   return data.items.length > 0;
 }

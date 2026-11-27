@@ -67,7 +67,9 @@ export function readPanel(panel, output, session, read, render, empty) {
     try {
       const data = await read(AbortSignal.any([session, operation.signal, AbortSignal.timeout(15000)]));
       if (cancelled()) return;
-      if (render(data) === false) {
+      const hasData = render(data);
+      if (cancelled()) return;
+      if (hasData === false) {
         renderState(state, "empty", empty, "");
         retry.hidden = false;
       } else {
@@ -138,7 +140,7 @@ export function operationDialog(feedback) {
     }
     writing = save.disabled = fields.disabled = close.disabled = true;
     feedback("");
-    let uncertain = false;
+    let requireNewConfirmation = false;
     let invalidControl;
     try {
       await authorizedRequest(command.path, {
@@ -151,8 +153,8 @@ export function operationDialog(feedback) {
       command.reload();
     } catch (failure) {
       if (active !== command || command.signal.aborted) return;
-      uncertain = !failure.status || failure.status >= 500 || failure.code === "INVALID_RESPONSE";
-      if (uncertain) {
+      if (!failure.status || failure.status >= 500 || failure.code === "INVALID_RESPONSE") {
+        requireNewConfirmation = true;
         const warning = "Chưa xác định được kết quả. Dữ liệu đang được tải lại để bạn đối chiếu trước khi thao tác tiếp.";
         showError(warning);
         feedback(warning, true);
@@ -162,12 +164,15 @@ export function operationDialog(feedback) {
         showError([...new Set([sessionMessage(failure), ...messages])].join(" "));
         const named = failure.fields?.[0]?.field.toLowerCase();
         invalidControl = [...fields.elements].find(input => input.name.toLowerCase() === named);
-        if (failure.status === 404 || failure.code === "CONCURRENCY_CONFLICT") command.reload();
+        if (command.reconcileRejection && [400, 404, 409].includes(failure.status)) {
+          requireNewConfirmation = true;
+          command.reload();
+        } else if (failure.status === 404 || failure.code === "CONCURRENCY_CONFLICT") command.reload();
       }
     } finally {
       if (active === command) {
         writing = close.disabled = false;
-        fields.disabled = save.disabled = uncertain;
+        fields.disabled = save.disabled = requireNewConfirmation;
         invalidControl?.setAttribute("aria-invalid", "true");
         invalidControl?.focus();
       }
@@ -192,7 +197,7 @@ export function operationDialog(feedback) {
         if (active !== command || signal.aborted) return;
         command.dispose = config.render(fields, data, signal, showError);
         save.hidden = save.disabled = false;
-        const initial = fields.querySelector("input:not([type=checkbox]), select");
+        const initial = fields.querySelector("input:not([type=checkbox]), select, textarea");
         (initial || close).focus();
       } catch (failure) {
         if (active === command && !signal.aborted) {

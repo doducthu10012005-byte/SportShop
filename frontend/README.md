@@ -56,11 +56,16 @@ python -B frontend/tests/auth_browser.py --orders --cert $frontendCert --key $fr
 python -B frontend/tests/auth_browser.py --dashboard --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-catalog --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-stock --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --admin-orders --cert $frontendCert --key $frontendKey
 ~~~
 
 ## Tổng quan quản trị
 
 Mở `https://localhost:5500/admin/` và đăng nhập bằng tài khoản Admin trong môi trường thử. Dashboard mặc định xem bảy ngày gần nhất, tính cả ngày hôm nay theo giờ Việt Nam. Bộ lọc doanh thu hỗ trợ tối đa 366 ngày và nhóm theo ngày hoặc tháng. Bảng đơn gần đây hiển thị tối đa năm đơn và có nút tải lại riêng.
+
+### Quản lý đơn hàng
+
+Chọn **Đơn hàng** trong menu quản trị hoặc bấm mã đơn ở bảng đơn gần đây để xem chi tiết. Trang `https://localhost:5500/admin/orders/` tìm theo mã đơn, tên hoặc số điện thoại người nhận. Bộ lọc ngày dùng giờ Việt Nam. Các nút chuyển trạng thái nằm trên trang chi tiết. Hủy đơn yêu cầu lý do từ 5 đến 255 ký tự. Nếu chưa xác định được kết quả cập nhật, kiểm tra trạng thái và lịch sử tải lại trước khi thực hiện thao tác tiếp theo.
 
 ### Quản lý sản phẩm, danh mục và thương hiệu
 

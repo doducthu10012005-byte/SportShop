@@ -1,0 +1,17 @@
+.orders-admin-filters { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.orders-admin-filter-error { grid-column: 1 / -1; }
+.orders-admin-detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-width: 0; }
+.orders-admin-summary { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
+.orders-admin-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; }
+.orders-admin-facts section { padding: .85rem; border: 1px solid var(--line); border-radius: .75rem; }
+.orders-admin-facts dl { margin: .65rem 0 0; }
+.orders-admin-facts dl div { padding: .35rem 0; border-top: 1px solid var(--line); }
+.orders-admin-facts dt { color: var(--muted); font-size: .85rem; }
+.orders-admin-facts dd { margin: 0; overflow-wrap: anywhere; }
+.orders-admin-item { display: flex; align-items: center; gap: .5rem; }
+.orders-admin-item .product-photo { width: 3.25rem; flex-shrink: 0; aspect-ratio: 1; }
+.orders-admin-item .photo-placeholder { font-size: .68rem; text-align: center; }
+.orders-admin-history { margin: .5rem 0 0; padding-inline-start: 1.35rem; }
+.orders-admin-history li { padding: .3rem .5rem; overflow-wrap: anywhere; }
+.orders-admin-title { overflow-wrap: anywhere; }
+.orders-admin-transitions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }

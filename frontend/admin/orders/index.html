@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý hàng hóa — SportShop</title>
+  <link rel="stylesheet" href="../../css/site.css">
+  <link rel="stylesheet" href="../../css/catalog.css">
+  <link rel="stylesheet" href="../../css/admin.css">
+  <link rel="stylesheet" href="../../css/admin-catalog.css">
+  <link rel="stylesheet" href="../../css/admin-stock.css">
+  <link rel="stylesheet" href="../../css/admin-orders.css">
+  <script type="module" src="../../js/pages/admin-orders.js"></script>
+</head>
+<body class="admin-page">
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-top">
+        <a class="brand" href="../" aria-label="SportShop — Quản trị"><span class="brand-mark" aria-hidden="true"></span>Sport<span>Shop</span></a>
+        <button class="button button-outline admin-menu" type="button" aria-controls="admin-nav"
+          aria-expanded="false" data-admin-menu data-admin-only hidden>Menu</button>
+      </div>
+      <nav id="admin-nav" aria-label="Điều hướng quản trị" data-admin-only hidden>
+        <a href="../"><span class="dashboard-icon" aria-hidden="true"></span>Tổng quan</a>
+        <a href="../catalog/">Sản phẩm</a>
+        <a href="../catalog/?view=categories">Danh mục</a>
+        <a href="../catalog/?view=brands">Thương hiệu</a>
+        <a href="../catalog/manage/?view=inventory">Tồn kho</a>
+        <a href="./" aria-current="page">Đơn hàng</a>
+        <a class="back-store" href="../../">← Về cửa hàng</a>
+      </nav>
+    </aside>
+    <main id="main" class="admin-main" tabindex="-1">
+      <section class="connection-card admin-guard" data-admin-guard>
+        <h1>Quản trị SportShop</h1>
+        <p data-guard-message role="status">Đang kiểm tra phiên đăng nhập…</p>
+        <a class="button button-primary" href="../../account/?return=admin#login" data-guard-login hidden>Đăng nhập</a>
+        <a class="button button-outline" href="../../account/#profile">Tài khoản</a>
+      </section>
+      <div data-admin-only hidden>
+        <header class="admin-heading">
+          <div><p class="admin-context">Quản trị SportShop</p><h1 data-page-title>Quản lý hàng hóa</h1></div>
+          <div class="admin-identity">
+            <div><strong data-admin-name></strong><span data-admin-email></span></div>
+            <button class="button button-outline" type="button" data-admin-logout>Đăng xuất</button>
+          </div>
+        </header>
+        <div class="stock-workspace" data-orders-workspace></div>
+      </div>
+    </main>
+  </div>
+  <dialog class="dialog management-dialog" aria-labelledby="order-dialog-title" data-operation>
+    <h2 id="order-dialog-title" data-operation-title></h2>
+    <p data-operation-loading role="status" hidden>Đang chuẩn bị biểu mẫu…</p>
+    <form class="management-editor" data-operation-form>
+      <fieldset class="stock-operation-fields management-fields" data-operation-fields></fieldset>
+      <p class="form-error" data-operation-error role="alert" hidden></p>
+      <div class="management-actions">
+        <button class="button button-outline" type="button" data-operation-close>Đóng</button>
+        <button class="button button-primary" type="submit" data-operation-save>Lưu</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

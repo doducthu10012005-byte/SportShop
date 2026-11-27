@@ -1,6 +1,6 @@
 import { logout, restoreSession, watchSession } from "./auth.js";
 
-export function startAdminSession({ account, view, productId, clear, load }) {
+export function startAdminSession({ account, view, productId, orderId, clear, load }) {
   const guard = document.querySelector("[data-admin-guard]");
   const sections = document.querySelectorAll("[data-admin-only]");
   const name = document.querySelector("[data-admin-name]");
@@ -10,6 +10,7 @@ export function startAdminSession({ account, view, productId, clear, load }) {
   const login = new URL("?return=admin#login", account);
   if (view) login.searchParams.set("view", view);
   if (productId) login.searchParams.set("productId", productId);
+  if (orderId) login.searchParams.set("orderId", orderId);
   guard.querySelector("[data-guard-login]").href = login;
   let adminId = null;
   let version = 0;

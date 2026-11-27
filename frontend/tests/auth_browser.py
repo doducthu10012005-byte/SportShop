@@ -47,6 +47,7 @@ def run(args, temp_path):
     dashboard = None
     catalog_admin = None
     admin_stock = None
+    admin_orders = None
     test_module = "auth_browser.js"
     if args.dashboard:
         from dashboard_fixture import DashboardFixture
@@ -60,6 +61,10 @@ def run(args, temp_path):
         from admin_stock_fixture import AdminStockFixture
         admin_stock = AdminStockFixture()
         test_module = "admin_stock_browser.js"
+    elif args.admin_orders:
+        from admin_orders_fixture import AdminOrdersFixture
+        admin_orders = AdminOrdersFixture()
+        test_module = "admin_orders_browser.js"
     elif args.orders:
         from orders_fixture import OrdersFixture
         cart = OrdersFixture()
@@ -128,6 +133,11 @@ def run(args, temp_path):
                 fixture.calls[path] = fixture.calls.get(path, 0) + 1
             if dashboard and path in ("admin/statistics/revenue", "admin/orders"):
                 return dashboard.dispatch(self, path, bearer in fixture.tokens, fixture.user, parse_qs(urlsplit(self.path).query))
+            if admin_orders and (path == "admin/orders" or path.startswith("admin/orders/")):
+                competition = bearer == "Bearer " + admin_orders.second_admin_token
+                user = {"role": "Admin", "userId": 3} if competition else fixture.user
+                return admin_orders.dispatch(self, path, body, competition or bearer in fixture.tokens, user,
+                                             parse_qs(urlsplit(self.path).query))
             if admin_stock and (path in ("sizes", "colors") or path.startswith(("admin/products/", "admin/inventory"))):
                 return admin_stock.dispatch(self, path, body, raw, bearer in fixture.tokens, fixture.user,
                                             parse_qs(urlsplit(self.path).query))
@@ -256,6 +266,8 @@ def run(args, temp_path):
                         result.update(catalog_admin.control(action))
                     if admin_stock:
                         result.update(admin_stock.control(action))
+                    if admin_orders:
+                        result.update(admin_orders.control(action))
                     return self.send_text(json.dumps(result), "application/json")
             return super().do_GET()
 
@@ -312,6 +324,7 @@ if __name__ == "__main__":
     suite.add_argument("--dashboard", action="store_true", help="Run the Admin Dashboard scenarios.")
     suite.add_argument("--admin-catalog", action="store_true", help="Run the Admin catalog management scenarios.")
     suite.add_argument("--admin-stock", action="store_true", help="Run the Admin variants, inventory and image scenarios.")
+    suite.add_argument("--admin-orders", action="store_true", help="Run the Admin order management scenarios.")
     parser.add_argument("--chrome", default=os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome",
                                                        "Application", "chrome.exe"))
     with tempfile.TemporaryDirectory(prefix="SportShop-AuthChromium-", ignore_cleanup_errors=True) as profile:

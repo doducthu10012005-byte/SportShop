@@ -49,6 +49,7 @@
 .admin-table thead { color: var(--muted); background: var(--ground); }
 .admin-table th:last-child, .admin-table td:last-child { text-align: right; }
 .admin-table tbody th { font-weight: 720; }
+.admin-order-link { color: var(--violet-dark); font-weight: 700; text-decoration: underline; text-underline-offset: .18em; }
 .admin-table .payment-status { color: var(--muted); font-size: .8rem; }
 .admin-table td small { display: block; }
 
