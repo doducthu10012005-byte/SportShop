@@ -33,7 +33,7 @@ export function clearAccessToken() {
   accessToken = null;
 }
 
-export async function request(path, { method = "GET", body, query, auth = true, signal, expectedStatus } = {}) {
+export async function request(path, { method = "GET", body, query, auth = true, signal, expectedStatus, jsonReviver } = {}) {
   const base = new URL(API_BASE_URL.replace(/\/+$/, "") + "/", window.location.href);
   const url = new URL(path.replace(/^\/+/, ""), base);
   if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) {
@@ -75,7 +75,7 @@ export async function request(path, { method = "GET", body, query, auth = true, 
   let document;
   if (response.headers.get("Content-Type")?.match(/\/(?:json|[^;\s]+\+json)(?:\s*;|$)/i)) {
     try {
-      document = await response.json();
+      document = jsonReviver ? JSON.parse(await response.text(), jsonReviver) : await response.json();
     } catch (error) {
       if (signal?.aborted || error?.name === "AbortError") throw error;
     }

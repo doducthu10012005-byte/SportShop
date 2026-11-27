@@ -2,9 +2,10 @@ import { element, field } from "../admin-catalog-form.js";
 import { startAdminSession } from "../admin-session.js";
 import { button, operationDialog, pagination, readPanel, table, tableRow } from "../admin-stock-ui.js";
 import { ApiError } from "../api.js";
+import { paymentJson, paymentMoney, paymentPanel } from "../admin-payments.js";
 import { authorizedRequest } from "../auth.js";
-import { money, positiveInt, productImage } from "../catalog.js";
-import { adminOrderDetailUrl, orderTime, paymentStatus } from "../orders.js";
+import { positiveInt, productImage } from "../catalog.js";
+import { adminOrderDetailUrl, adminPaymentUrl, orderTime, paymentStatus } from "../orders.js";
 
 const states = [
   ["PENDING", "Chờ xác nhận"], ["CONFIRMED", "Đã xác nhận"], ["SHIPPING", "Đang giao"],
@@ -17,11 +18,17 @@ const actions = {
 const flow = new Map([["PENDING", ["CONFIRMED", "CANCELLED"]], ["CONFIRMED", ["SHIPPING", "CANCELLED"]],
   ["SHIPPING", ["DELIVERED"]]]);
 const params = new URLSearchParams(location.search);
+const payments = params.get("view") === "payments";
 const detail = params.has("id");
 const orderId = positiveInt(params.get("id"));
 const workspace = document.querySelector("[data-orders-workspace]");
 const title = document.querySelector("[data-page-title]");
-title.textContent = detail ? "Chi tiết đơn hàng" : "Đơn hàng";
+title.textContent = payments ? detail ? "Chi tiết thanh toán" : "Thanh toán" : detail ? "Chi tiết đơn hàng" : "Đơn hàng";
+if (payments) {
+  document.title = "Thanh toán — SportShop";
+  document.querySelector('#admin-nav [aria-current="page"]').removeAttribute("aria-current");
+  document.querySelector("[data-admin-payments-nav]").setAttribute("aria-current", "page");
+}
 const notice = element("p", null, { "data-feedback": "", role: "status", hidden: "" });
 function feedback(message, warning = false) {
   notice.textContent = message;
@@ -36,13 +43,13 @@ function date(value) {
 }
 
 function detailLink(order) {
-  const url = adminOrderDetailUrl(order.orderId);
+  const url = payments ? adminPaymentUrl(order.orderId) : adminOrderDetailUrl(order.orderId);
   return url ? element("a", order.orderCode, { href: url, class: "admin-order-link" }) : order.orderCode;
 }
 
 function showList(signal) {
   const panel = element("section", null, { class: "admin-panel catalog-management", "aria-label": "Danh sách đơn hàng" });
-  panel.append(element("h2", "Danh sách đơn hàng"));
+  panel.append(element("h2", payments ? "Thanh toán theo đơn hàng" : "Danh sách đơn hàng"));
   const filter = element("form", null, { class: "management-filters orders-admin-filters", "data-admin-orders-filter": "" });
   field(filter, "keyword", "Tìm đơn hàng", { type: "search", placeholder: "Mã đơn, tên hoặc SĐT người nhận" });
   field(filter, "statusCode", "Trạng thái đơn", { options: states, placeholder: "Tất cả" });
@@ -53,15 +60,25 @@ function showList(signal) {
   field(filter, "pageSize", "Số dòng mỗi trang", { options: [[20, "20"], [10, "10"], [50, "50"]], value: 20 });
   const invalid = element("p", null, { id: "orders-date-error", class: "form-error orders-admin-filter-error", role: "alert", hidden: "" });
   filter.append(button("Áp dụng", { type: "submit" }), invalid);
+  if (payments) {
+    const refunds = button("Chờ hoàn tiền", { "data-refund-queue": "" });
+    refunds.addEventListener("click", () => {
+      filter.elements.paymentStatus.value = "RefundPending";
+      filter.requestSubmit();
+    });
+    filter.append(refunds);
+  }
   panel.append(filter);
 
-  const grid = table("Danh sách đơn hàng", ["Mã đơn", "Ngày đặt (giờ Việt Nam)", "Khách hàng", "Trạng thái", "Thanh toán", "Tổng tiền"]);
+  const grid = table(payments ? "Danh sách thanh toán theo đơn" : "Danh sách đơn hàng",
+    ["Mã đơn", "Ngày đặt (giờ Việt Nam)", ...(payments ? [] : ["Khách hàng"]), "Trạng thái đơn", "Thanh toán",
+      payments ? "Tổng đơn" : "Tổng tiền"]);
   const output = element("div", null, { "data-admin-orders-list": "" });
   let query = { page: 1, pageSize: 20, sort: "-createdAt" };
   const pages = pagination(page => { query = { ...query, page }; void load(); });
   output.append(grid.region, pages.root);
   const load = readPanel(panel, output, signal,
-    async requestSignal => (await authorizedRequest("/admin/orders", { query, signal: requestSignal })).data,
+    async requestSignal => (await authorizedRequest("/admin/orders", { query, signal: requestSignal, jsonReviver: paymentJson })).data,
     ({ items, pagination: meta }) => {
       if (meta.page > 1 && meta.page > meta.totalPages) {
         query = { ...query, page: Math.max(1, meta.totalPages) };
@@ -72,8 +89,8 @@ function showList(signal) {
         const payment = element("span", paymentStatus(order.paymentStatus));
         const method = order.paymentMethodCode === "BANK_TRANSFER" ? "Chuyển khoản" : order.paymentMethodCode;
         if (method) payment.append(element("small", method, { class: "payment-status" }));
-        const row = tableRow(grid.body, detailLink(order), date(order.createdAt), order.customer?.fullName,
-          order.status.statusName, payment, money(order.totalAmount));
+        const row = tableRow(grid.body, detailLink(order), date(order.createdAt), ...(payments ? [] : [order.customer?.fullName]),
+          order.status.statusName, payment, paymentMoney(order.totalAmount));
         row.dataset.orderId = order.orderId;
         return row;
       }));
@@ -126,7 +143,7 @@ function itemsPanel(items) {
     const title = element("span", item.productName);
     title.append(element("small", [item.sku, item.sizeName, item.colorName].filter(Boolean).join(" · ")));
     product.append(productImage(item.imageUrl), title);
-    tableRow(grid.body, product, money(item.unitPrice), item.quantity, money(item.lineTotal));
+    tableRow(grid.body, product, paymentMoney(item.unitPrice), item.quantity, paymentMoney(item.lineTotal));
   }
   panel.append(items.length ? grid.region : element("p", "Đơn chưa có dòng sản phẩm."));
   return panel;
@@ -147,7 +164,8 @@ function historyPanel(history) {
 
 function showDetail(signal, id) {
   const panel = element("section", null, { class: "admin-panel catalog-management", "aria-label": "Chi tiết đơn hàng" });
-  panel.append(element("a", "← Danh sách đơn hàng", { href: "./", class: "admin-order-link" }));
+  panel.append(element("a", payments ? "← Danh sách thanh toán" : "← Danh sách đơn hàng",
+    { href: payments ? adminPaymentUrl() : "./", class: "admin-order-link" }));
   if (!id) {
     panel.append(element("p", "Mã định danh đơn hàng không hợp lệ.", { role: "alert" }));
     workspace.append(panel);
@@ -156,7 +174,7 @@ function showDetail(signal, id) {
   const output = element("div", null, { class: "orders-admin-detail", "data-admin-order-detail": "" });
   const path = "/admin/orders/" + id;
   const load = readPanel(panel, output, signal,
-    async requestSignal => (await authorizedRequest(path, { signal: requestSignal })).data,
+    async requestSignal => (await authorizedRequest(path, { signal: requestSignal, jsonReviver: paymentJson })).data,
     order => {
       if (order?.orderId !== id || !order.status || !Array.isArray(order.items) || !Array.isArray(order.statusHistory)) {
         throw new ApiError("Phản hồi chi tiết đơn hàng không hợp lệ.", { code: "INVALID_RESPONSE" });
@@ -167,21 +185,21 @@ function showDetail(signal, id) {
         element("span", order.status.statusName, { class: "management-status", "data-current-status": "" }), date(order.createdAt));
       const reload = button("Tải lại đơn", { "data-reload-order": "" });
       reload.addEventListener("click", () => void load());
-      heading.append(summary, reload);
+      const links = element("div", null, { class: "management-actions" });
+      links.append(element("a", payments ? "Xem chi tiết đơn hàng" : "Quản lý thanh toán",
+        { href: payments ? adminOrderDetailUrl(id) : adminPaymentUrl(id), class: "button button-outline" }), reload);
+      heading.append(summary, links);
       const info = element("div", null, { class: "orders-admin-facts" });
-      const payment = order.payment;
-      info.append(facts("Khách hàng và giao hàng", [
+      if (!payments) info.append(facts("Khách hàng và giao hàng", [
         ["Khách hàng", order.customer?.fullName], ["Mã khách hàng", order.customer?.userId],
         ["Người nhận", order.recipientName], ["Điện thoại", order.recipientPhone], ["Địa chỉ giao hàng", order.shippingAddress],
         ["Ghi chú đặt hàng", order.note], ["Lý do hủy", order.cancelReason]
-      ], "data-admin-order-recipient"), facts("Thanh toán", payment ? [
-        ["Phương thức", payment.methodName ?? payment.methodCode], ["Trạng thái", paymentStatus(payment.paymentStatus)],
-        ["Mã giao dịch", payment.transactionCode], ["Số tiền phải trả", money(payment.amount)],
-        ["Đã nhận", payment.receivedAmount == null ? null : money(payment.receivedAmount)]
-      ] : [["Thông tin", "Chưa có dữ liệu thanh toán"]], "data-admin-order-payment"),
-      facts("Tổng tiền", [["Tiền hàng", money(order.subtotal)], ["Phí vận chuyển", money(order.shippingFee)],
-        ["Tổng thanh toán", money(order.totalAmount)]], "data-admin-order-totals"));
-      output.replaceChildren(heading, transitions(order), info, itemsPanel(order.items), historyPanel(order.statusHistory));
+      ], "data-admin-order-recipient"));
+      info.append(paymentPanel(order, { makeFacts: facts, path, dialog, signal, reload: load, enableActions: payments }),
+        facts("Tổng tiền", [["Tiền hàng", paymentMoney(order.subtotal)], ["Phí vận chuyển", paymentMoney(order.shippingFee)],
+          ["Tổng thanh toán", paymentMoney(order.totalAmount)]], "data-admin-order-totals"));
+      if (payments) output.replaceChildren(heading, info);
+      else output.replaceChildren(heading, transitions(order), info, itemsPanel(order.items), historyPanel(order.statusHistory));
     }, "Không tìm thấy đơn hàng");
 
   function transitions(order) {
@@ -231,7 +249,7 @@ function showDetail(signal, id) {
 
 startAdminSession({
   account: new URL("../../account/", location.href),
-  view: "orders",
+  view: payments ? "payments" : "orders",
   orderId,
   clear() {
     session?.abort();

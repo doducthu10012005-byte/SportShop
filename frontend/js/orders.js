@@ -26,6 +26,12 @@ export function adminOrderDetailUrl(id) {
   return detailUrl(adminOrderPage, id);
 }
 
+export function adminPaymentUrl(id) {
+  const url = new URL(adminOrderDetailUrl(id) ?? adminOrderPage);
+  url.searchParams.set("view", "payments");
+  return url.href;
+}
+
 export function orderTime(value) {
   const time = Date.parse(value);
   return Number.isFinite(time) ? vietnamTime.format(time) : "—";

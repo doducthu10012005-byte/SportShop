@@ -1,6 +1,6 @@
 import { changePassword, login, logout, register, restoreSession, sessionMessage, watchSession } from "../auth.js";
 import { positiveInt } from "../catalog.js";
-import { adminOrderDetailUrl } from "../orders.js";
+import { adminOrderDetailUrl, adminPaymentUrl } from "../orders.js";
 
 const views = new Map([...document.querySelectorAll("[data-account-view]")].map(view => [view.dataset.accountView, view]));
 const notice = document.querySelector("[data-session-notice]");
@@ -59,6 +59,7 @@ watchSession(session => {
     if (view === "inventory") target = "../admin/catalog/manage/?view=inventory";
     if (view === "product" && productId) target = "../admin/catalog/manage/?productId=" + productId;
     if (view === "orders") target = adminOrderDetailUrl(accountQuery.get("orderId")) ?? "../admin/orders/";
+    if (view === "payments") target = adminPaymentUrl(accountQuery.get("orderId"));
     location.replace(target);
     return;
   }

@@ -155,7 +155,8 @@ export function operationDialog(feedback) {
       if (active !== command || command.signal.aborted) return;
       if (!failure.status || failure.status >= 500 || failure.code === "INVALID_RESPONSE") {
         requireNewConfirmation = true;
-        const warning = "Chưa xác định được kết quả. Dữ liệu đang được tải lại để bạn đối chiếu trước khi thao tác tiếp.";
+        const warning = command.unknownMessage ??
+          "Chưa xác định được kết quả. Dữ liệu đang được tải lại để bạn đối chiếu trước khi thao tác tiếp.";
         showError(warning);
         feedback(warning, true);
         command.reload(true);

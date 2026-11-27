@@ -65,6 +65,10 @@ def run(args, temp_path):
         from admin_orders_fixture import AdminOrdersFixture
         admin_orders = AdminOrdersFixture()
         test_module = "admin_orders_browser.js"
+    elif args.admin_payments:
+        from admin_payments_fixture import AdminPaymentsFixture
+        admin_orders = AdminPaymentsFixture()
+        test_module = "admin_payments_browser.js"
     elif args.orders:
         from orders_fixture import OrdersFixture
         cart = OrdersFixture()
@@ -133,6 +137,8 @@ def run(args, temp_path):
                 fixture.calls[path] = fixture.calls.get(path, 0) + 1
             if dashboard and path in ("admin/statistics/revenue", "admin/orders"):
                 return dashboard.dispatch(self, path, bearer in fixture.tokens, fixture.user, parse_qs(urlsplit(self.path).query))
+            if args.admin_payments and path == "payment-methods":
+                return self.success([{"paymentMethodId": 1, "methodCode": "COD", "methodName": "COD"}])
             if admin_orders and (path == "admin/orders" or path.startswith("admin/orders/")):
                 competition = bearer == "Bearer " + admin_orders.second_admin_token
                 user = {"role": "Admin", "userId": 3} if competition else fixture.user
@@ -325,6 +331,7 @@ if __name__ == "__main__":
     suite.add_argument("--admin-catalog", action="store_true", help="Run the Admin catalog management scenarios.")
     suite.add_argument("--admin-stock", action="store_true", help="Run the Admin variants, inventory and image scenarios.")
     suite.add_argument("--admin-orders", action="store_true", help="Run the Admin order management scenarios.")
+    suite.add_argument("--admin-payments", action="store_true", help="Run the Admin payment and refund scenarios.")
     parser.add_argument("--chrome", default=os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome",
                                                        "Application", "chrome.exe"))
     with tempfile.TemporaryDirectory(prefix="SportShop-AuthChromium-", ignore_cleanup_errors=True) as profile:

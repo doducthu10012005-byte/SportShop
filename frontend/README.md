@@ -57,6 +57,7 @@ python -B frontend/tests/auth_browser.py --dashboard --cert $frontendCert --key 
 python -B frontend/tests/auth_browser.py --admin-catalog --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-stock --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-orders --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --admin-payments --cert $frontendCert --key $frontendKey
 ~~~
 
 ## Tổng quan quản trị
@@ -66,6 +67,10 @@ Mở `https://localhost:5500/admin/` và đăng nhập bằng tài khoản Admin
 ### Quản lý đơn hàng
 
 Chọn **Đơn hàng** trong menu quản trị hoặc bấm mã đơn ở bảng đơn gần đây để xem chi tiết. Trang `https://localhost:5500/admin/orders/` tìm theo mã đơn, tên hoặc số điện thoại người nhận. Bộ lọc ngày dùng giờ Việt Nam. Các nút chuyển trạng thái nằm trên trang chi tiết. Hủy đơn yêu cầu lý do từ 5 đến 255 ký tự. Nếu chưa xác định được kết quả cập nhật, kiểm tra trạng thái và lịch sử tải lại trước khi thực hiện thao tác tiếp theo.
+
+### Thanh toán và hoàn tiền
+
+Chọn **Thanh toán** từ Dashboard hoặc **Quản lý thanh toán** trong chi tiết đơn. Danh sách có bộ lọc **Chờ hoàn tiền**. Chi tiết hiển thị số phải trả, số đã nhận, hạn thanh toán và thời điểm ghi nhận khi API cung cấp. COD được ghi nhận khi xác nhận đơn đã giao. Với chuyển khoản còn đủ điều kiện, Admin nhập mã giao dịch và số tiền thực nhận sau khi đối chiếu. Chỉ chọn **Ghi nhận đã hoàn tiền** sau khi hoàn đủ tiền cho khách ngoài SportShop.
 
 ### Quản lý sản phẩm, danh mục và thương hiệu
 
