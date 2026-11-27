@@ -3,7 +3,7 @@ import { button } from "./admin-stock-ui.js";
 import { money } from "./catalog.js";
 import { orderTime, paymentStatus } from "./orders.js";
 
-const moneyFields = new Set(["amount", "receivedAmount", "totalAmount", "subtotal", "shippingFee", "unitPrice", "lineTotal"]);
+const moneyFields = new Set(["amount", "receivedAmount", "totalAmount", "subtotal", "shippingFee", "unitPrice", "lineTotal", "totalSpent"]);
 const integer = new Intl.NumberFormat("vi-VN");
 
 export function paymentJson(key, value, context) {

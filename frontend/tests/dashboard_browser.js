@@ -112,11 +112,10 @@ try {
   assert(find(dashboard, "[data-recent-orders]").textContent.includes("SP-QA-<b data-injected>204</b>") &&
     !find(dashboard, "[data-injected]") && !find(dashboard, "[data-recent-orders]").textContent.includes("riêng tư"),
     "order table renders text safely and omits unused personal data");
-  assert(find(dashboard, ".admin-nav-planned").textContent.match(/Chưa triển khai/g).length === 1 &&
-    !find(dashboard, ".admin-nav-planned a") &&
+  assert(find(dashboard, '#admin-nav a[href="./customers/"]') &&
     find(dashboard, '#admin-nav a[href="./catalog/"]') && find(dashboard, '#admin-nav a[href="./orders/"]') &&
     find(dashboard, '[data-recent-orders] a').href.endsWith("/admin/orders/?id=204"),
-    "catalog, orders and recent order links are available");
+    "catalog, customers, orders and recent order links are available");
 
   let before = calls(await control()).length;
   range(dashboard, "", "2026-11-30");

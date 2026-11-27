@@ -58,6 +58,7 @@ python -B frontend/tests/auth_browser.py --admin-catalog --cert $frontendCert --
 python -B frontend/tests/auth_browser.py --admin-stock --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-orders --cert $frontendCert --key $frontendKey
 python -B frontend/tests/auth_browser.py --admin-payments --cert $frontendCert --key $frontendKey
+python -B frontend/tests/auth_browser.py --admin-customers --cert $frontendCert --key $frontendKey
 ~~~
 
 ## Tổng quan quản trị
@@ -71,6 +72,10 @@ Chọn **Đơn hàng** trong menu quản trị hoặc bấm mã đơn ở bảng
 ### Thanh toán và hoàn tiền
 
 Chọn **Thanh toán** từ Dashboard hoặc **Quản lý thanh toán** trong chi tiết đơn. Danh sách có bộ lọc **Chờ hoàn tiền**. Chi tiết hiển thị số phải trả, số đã nhận, hạn thanh toán và thời điểm ghi nhận khi API cung cấp. COD được ghi nhận khi xác nhận đơn đã giao. Với chuyển khoản còn đủ điều kiện, Admin nhập mã giao dịch và số tiền thực nhận sau khi đối chiếu. Chỉ chọn **Ghi nhận đã hoàn tiền** sau khi hoàn đủ tiền cho khách ngoài SportShop.
+
+### Quản lý khách hàng
+
+Chọn **Khách hàng** trong menu quản trị hoặc mở `https://localhost:5500/admin/customers/`. Tìm theo tên, email hoặc số điện thoại và chọn tên khách để mở hồ sơ. Chi tiết hiển thị tổng số đơn và chi tiêu từ các đơn đã giao. Khóa hoặc mở khóa cần xác nhận. Khi chưa rõ kết quả thao tác, kiểm tra trạng thái vừa tải lại trước khi tiếp tục.
 
 ### Quản lý sản phẩm, danh mục và thương hiệu
 

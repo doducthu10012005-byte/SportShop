@@ -3,9 +3,6 @@
 .admin-guard > .button { margin-right: .35rem; }
 .admin-sidebar-top, .admin-identity, .admin-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .65rem; }
 .admin-menu { display: none; }
-.admin-nav-planned { display: grid; gap: .25rem; align-self: start; list-style: none; margin: .15rem 0; padding: 0; }
-.admin-nav-planned li { display: grid; gap: .05rem; padding: .4rem .8rem; color: var(--muted); font-size: .91rem; font-weight: 650; }
-.admin-nav-planned small { font-weight: 500; font-size: .77rem; }
 .admin-identity { min-width: 0; flex-wrap: wrap; }
 .admin-identity strong, .admin-identity span { display: block; overflow-wrap: anywhere; }
 .admin-identity span { color: var(--muted); font-size: .84rem; }
@@ -65,8 +62,6 @@
   .admin-menu { display: inline-flex; min-height: 40px; }
   .admin-sidebar nav { display: grid; margin: .5rem 0 0; }
   .admin-sidebar nav:not([data-open]) { display: none; }
-  .admin-nav-planned { grid-template-columns: repeat(3,minmax(0,1fr)); }
-  .admin-nav-planned li { padding-inline: .4rem; overflow-wrap: anywhere; }
 }
 @media (max-width: 510px) {
   .revenue-filter form { grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }

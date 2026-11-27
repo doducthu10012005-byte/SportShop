@@ -60,6 +60,10 @@ watchSession(session => {
     if (view === "product" && productId) target = "../admin/catalog/manage/?productId=" + productId;
     if (view === "orders") target = adminOrderDetailUrl(accountQuery.get("orderId")) ?? "../admin/orders/";
     if (view === "payments") target = adminPaymentUrl(accountQuery.get("orderId"));
+    if (view === "customers") {
+      const customerId = positiveInt(accountQuery.get("customerId"));
+      target = "../admin/customers/" + (customerId ? "?id=" + customerId : "");
+    }
     location.replace(target);
     return;
   }
